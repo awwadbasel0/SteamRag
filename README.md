@@ -1,15 +1,13 @@
-# SteamRAG Cloud Server Edition ☁️🎮⚡
+# SteamRAG Server ☁️🎮⚡
 
-**SteamRAG Cloud Server** is a standalone, zero-local-GPU agentic video-game intelligence and deep indie discovery server. It connects **Google Gemini Cloud models** (verified dynamically via live canary probes) to real-time multi-source gaming data: **Steam Store, Steam Live CCU, Steam Reviews, SteamSpy, HowLongToBeat, Metacritic, and Dynamic Gameplay Taxonomy**.
-
-Unlike the local desktop edition (`vibe-code-SteamRAG`), **SteamRAG Cloud Server** requires **zero local Ollama installation and zero local GPU/VRAM**—making it ready to deploy on any VPS, cloud instance, container, or home server.
+**SteamRAG Server** is a cloud-native agentic video-game intelligence and deep indie discovery web application. It connects **Google Gemini Cloud models** (verified dynamically via live canary probes) to real-time multi-source gaming data: **Steam Store, Steam Live CCU, Steam Reviews, Reddit Community Discussions, SteamSpy, HowLongToBeat, Metacritic, and Dynamic Gameplay Taxonomy**.
 
 ---
 
 ## 🌟 Key Features
 
-### 1. ☁️ 100% Cloud-Native Gemini Engine with Live Canary Probing
-- **Google AI Studio API Key or Google OAuth 2.0**: Connect via a 1-click Google AI Studio key (`AIzaSy...`), environment variable (`GEMINI_API_KEY`), or Google OAuth 2.0 Web Client.
+### 1. ☁️ Cloud-Native Gemini Engine with Live Canary Probing
+- **Google OAuth 2.0 or Google AI Studio API Key**: Sign in via Google OAuth 2.0 or connect a Google AI Studio key (`AIzaSy...`).
 - **Zero Hardcoded Model Lists (Live Canary Probe)**:
   - Queries `generativelanguage.googleapis.com/v1beta/models` dynamically and tests each text-generation candidate with a live canary request (`thinkingBudget: 0`, strict `3.5s` timeout).
   - Automatically filters out models that are unavailable on your tier (`404`/`429`) or unstable/slow, sorting verified models by stability and real-time latency (`☁️ 240ms`).
@@ -17,13 +15,13 @@ Unlike the local desktop edition (`vibe-code-SteamRAG`), **SteamRAG Cloud Server
 
 ### 2. 🎯 Deep Indie, Cult-Classic & Niche Discovery Engine
 - **3-Layer Discovery Pipeline**:
-  1. **Step 1 LLM Indie Brainstorming**: Brainstorms 12 specific indie, cult-classic, and hidden-gem titles tailored to your prompt and Steam library before querying external APIs.
+  1. **Step 1 LLM + Reddit Indie Brainstorming**: Brainstorms specific indie, cult-classic, and hidden-gem titles tailored to your prompt, live Reddit threads (`r/gamingsuggestions` & `r/indiegaming`), and your Steam library before querying external APIs.
   2. **Curated Sub-Genre Pools & Live Steam Store Search**: Combines 120+ indie/niche sub-genre seeds with live Steam Store keyword resolution.
   3. **Indie-First Ranking & Anti-Repetition Memory**: Boosts high-rated indie/hidden gems (`200–35,000` review sweet spot, `≥85%` positive) while penalizing overused mainstream AAA blockbusters and recently recommended AppIDs.
 
 ### 3. 🔐 Sign in with Steam (OpenID 2.0 + Library Sync)
 - One-click official **Steam OpenID 2.0** login through Valve's portal.
-- Syncs your Steam persona, avatar, and owned games + playtimes via Steam Community XML (`?xml=1`), `IPlayerService/GetOwnedGames/v1/`, and local library metadata.
+- Syncs your Steam persona, avatar, and owned games + playtimes via Steam Community XML (`?xml=1`) and `IPlayerService/GetOwnedGames/v1/`.
 - Tailors both game recommendations and the **dynamic background slideshow** to your top-played games.
 
 ### 4. 📊 Multi-Source Real-Time Game Intelligence (Steam + Reddit + HLTB + Metacritic)
