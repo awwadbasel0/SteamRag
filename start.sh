@@ -11,11 +11,19 @@ echo -e "${CYAN}         Launching SteamRAG Cloud Server            ${NC}"
 echo -e "${CYAN}  Cloud Video-Game Intelligence & Analytics Agent   ${NC}"
 echo -e "${CYAN}====================================================${NC}"
 
-# Ensure Python Virtualenv
-if [ ! -d "backend/.venv" ]; then
+# Ensure Python Virtualenv & All Requirements Installed
+if [ ! -f "backend/.venv/bin/python" ]; then
     echo "Creating Python virtual environment in backend/.venv..."
+    rm -rf backend/.venv
     python3 -m venv backend/.venv
-    backend/.venv/bin/pip install -r backend/requirements.txt
+fi
+echo "Ensuring Python dependencies from backend/requirements.txt are installed..."
+backend/.venv/bin/python -m pip install -q -r backend/requirements.txt
+
+# Ensure Frontend Node Modules Installed
+if [ ! -d "frontend/node_modules" ]; then
+    echo "Installing frontend dependencies..."
+    (cd frontend && npm install)
 fi
 
 # Clean up subprocesses on exit

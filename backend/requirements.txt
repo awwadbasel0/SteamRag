@@ -6,3 +6,4 @@ python-dotenv>=1.0.0
 aiosqlite>=0.20.0
 numpy>=1.26.0
 scikit-learn>=1.5.0
+howlongtobeatpy>=1.0.24
