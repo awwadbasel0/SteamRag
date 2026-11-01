@@ -9,6 +9,7 @@ from app.tools.steam_spy import get_steamspy_stats
 from app.tools.steam_discovery import is_discovery_query, discover_ranked_games
 from app.tools.howlongtobeat import get_game_playtime
 from app.tools.game_intelligence import get_game_taxonomy
+from app.tools.reddit_reviews import get_game_reddit_consensus
 from app.core.vector_store import vector_store
 from app.core.ollama_client import ollama_client
 from app.db.sqlite_db import get_current_user_session
@@ -162,6 +163,7 @@ class GameAgent:
             hltb = g.get("hltb") or {}
             tax = g.get("taxonomy") or {}
             meta = g.get("metacritic")
+            reddit = g.get("reddit") or {}
 
             lines = [
                 f"**Rank #{g.get('rank', 1)}: {g['name']} (AppID: {g['appid']})**",
@@ -171,6 +173,13 @@ class GameAgent:
                 f"- Current Live Players: {ccu:,} CCU" if ccu is not None else "- CCU: N/A",
                 f"- Steam Rating: {rev_sum.get('review_score_desc', 'Unknown')} ({rev_sum.get('positive_percentage', 0)}% positive out of {rev_sum.get('total_reviews', 0):,} reviews)",
             ]
+            if reddit and reddit.get("upvote_percentage"):
+                lines.append(
+                    f"- Reddit Community Consensus: {reddit.get('sentiment')} ({reddit.get('upvote_percentage')}% upvoted across {reddit.get('thread_count', 0)} discussion threads)"
+                )
+                top_t = (reddit.get("top_threads") or [None])[0]
+                if top_t:
+                    lines.append(f"  • Top Reddit Thread ({top_t.get('subreddit')}): \"{top_t.get('title')}\"")
             if meta:
                 lines.append(f"- Metacritic Critic Score: {meta}/100")
             if hltb.get("main_story_hours"):
@@ -267,9 +276,10 @@ class GameAgent:
             spy_task = asyncio.create_task(get_steamspy_stats(appid))
             rev_task = asyncio.create_task(get_steam_reviews(appid, limit=40))
             hltb_task = asyncio.create_task(get_game_playtime(game_name))
+            reddit_task = asyncio.create_task(get_game_reddit_consensus(game_name))
 
-            store_info, ccu_info, spy_info, rev_info, hltb_info = await asyncio.gather(
-                store_task, ccu_task, spy_task, rev_task, hltb_task
+            store_info, ccu_info, spy_info, rev_info, hltb_info, reddit_info = await asyncio.gather(
+                store_task, ccu_task, spy_task, rev_task, hltb_task, reddit_task
             )
 
             taxonomy_info = get_game_taxonomy(
@@ -286,6 +296,7 @@ class GameAgent:
                 "price": store_info.get("price") if store_info else None,
                 "current_ccu": ccu_info.get("player_count") if ccu_info else None,
                 "review_summary": rev_info.get("summary") if rev_info else None,
+                "reddit": reddit_info,
                 "release_date": store_info.get("release_date") if store_info else None,
                 "genres": store_info.get("genres") if store_info else [],
                 "metacritic": store_info.get("metacritic") if store_info else None,
@@ -333,6 +344,15 @@ class GameAgent:
                 context_blocks.append(
                     f"- Steam Community Rating: {s.get('review_score_desc')} ({s.get('positive_percentage')}% positive out of {s.get('total_reviews'):,} reviews)"
                 )
+
+            if reddit_info and reddit_info.get("upvote_percentage"):
+                context_blocks.append(
+                    f"- Reddit Community Consensus: {reddit_info.get('sentiment')} ({reddit_info.get('upvote_percentage')}% upvoted across {reddit_info.get('thread_count', 0)} discussion threads)"
+                )
+                for rt in (reddit_info.get("top_threads") or [])[:3]:
+                    context_blocks.append(
+                        f"  • [{rt.get('subreddit')} • {rt.get('score')} pts] \"{rt.get('title')}\" — {rt.get('excerpt', '')}"
+                    )
 
             raw_reviews = rev_info.get("reviews", []) if rev_info else []
             if raw_reviews:

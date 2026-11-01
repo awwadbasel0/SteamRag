@@ -51,6 +51,26 @@ export interface TaxonomyData {
   difficulty_style?: string;
 }
 
+export interface RedditThread {
+  title: string;
+  subreddit: string;
+  score: number;
+  num_comments: number;
+  upvote_ratio: number;
+  url: string;
+  excerpt?: string;
+}
+
+export interface RedditData {
+  thread_count: number;
+  upvote_percentage: number;
+  total_upvotes: number;
+  total_comments: number;
+  sentiment: string;
+  reddit_bonus?: number;
+  top_threads?: RedditThread[];
+}
+
 export interface GameCardData {
   appid?: number;
   name?: string;
@@ -67,6 +87,7 @@ export interface GameCardData {
   review_excerpt?: string;
   hltb?: HltbData | null;
   taxonomy?: TaxonomyData | null;
+  reddit?: RedditData | null;
   price?: {
     is_free: boolean;
     currency: string;

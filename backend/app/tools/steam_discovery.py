@@ -15,6 +15,7 @@ from app.tools.steam_reviews import get_steam_reviews
 from app.tools.steam_spy import get_steamspy_stats
 from app.tools.howlongtobeat import get_game_playtime
 from app.tools.game_intelligence import get_game_taxonomy
+from app.tools.reddit_reviews import search_reddit_recommendations, get_game_reddit_consensus
 
 # Rolling memory of recently recommended AppIDs and titles so consecutive searches always surface fresh games
 _RECENTLY_RECOMMENDED_APPIDS: deque = deque(maxlen=28)
@@ -345,12 +346,15 @@ async def _llm_brainstorm_candidates(
     ) if user_games else "None"
 
     recent_avoid = ", ".join(list(_RECENTLY_RECOMMENDED_NAMES)[-16:]) if _RECENTLY_RECOMMENDED_NAMES else "None"
+    reddit_threads = await search_reddit_recommendations(query, limit=4)
+    reddit_ctx = "\n".join(f"- {t}" for t in reddit_threads) if reddit_threads else "None"
 
     prompt = (
         f"User Request: \"{query}\"\n"
         f"User's Top Owned Steam Games (DO NOT recommend these): {owned_summary}\n"
-        f"Recently Shown Games (DO NOT repeat these): {recent_avoid}\n\n"
-        "Task: Suggest 9 specific PC games available on Steam that deeply match the User Request and/or the mechanical taste of their owned games.\n"
+        f"Recently Shown Games (DO NOT repeat these): {recent_avoid}\n"
+        f"Recent Reddit Community Threads (r/gamingsuggestions & r/indiegaming):\n{reddit_ctx}\n\n"
+        "Task: Suggest 9 specific PC games available on Steam that deeply match the User Request, Reddit community buzz, and/or the mechanical taste of their owned games.\n"
         "CRITICAL RULES:\n"
         "1. Dig deep: prioritize high-quality INDIE games, cult classics, AA hidden gems, and systemic/niche titles (e.g., Kenshi, Noita, Barotrauma, Project Zomboid, ZERO Sievert, Abiotic Factor, Shadows of Doubt, Caves of Qud, Nine Sols, V Rising, RimWorld, Outward, Inscryption, Strange Horticulture, Witchfire, SULFUR, Quasimorph, Rain World, Factorio, etc. when relevant).\n"
         "2. DO NOT suggest overused mainstream blockbusters like Helldivers 2, Cyberpunk 2077, Baldur's Gate 3, Elden Ring, or Counter-Strike 2 unless the user explicitly asked for that exact title.\n"
@@ -506,7 +510,10 @@ async def discover_ranked_games(
         genres = s_res.get("genres", [])
         short_desc = s_res.get("short_description", "")
 
-        hltb_data = await get_game_playtime(name)
+        hltb_data, reddit_data = await asyncio.gather(
+            get_game_playtime(name),
+            get_game_reddit_consensus(name),
+        )
         taxonomy_data = get_game_taxonomy(name, genres=genres, short_description=short_desc)
 
         rev_sum = (r_res or {}).get("summary", {})
@@ -522,18 +529,20 @@ async def discover_ranked_games(
             "discount_percent": 0
         })
 
-        # Indie-Aware & Fit-First Ranking Score:
-        # 1. Community Sentiment Quality (0-55 pts)
-        sentiment_points = int(pos_pct * 0.55)
-        # 2. LLM / Direct Search Semantic Fit Bonus (+24 pts)
+        # Indie-Aware & Fit-First Ranking Score (Steam + Reddit + HLTB + Indie Boost):
+        # 1. Steam Community Sentiment Quality (0-50 pts)
+        sentiment_points = int(pos_pct * 0.50)
+        # 2. Reddit Community Consensus Bonus (-4 to +9 pts)
+        reddit_bonus = int((reddit_data or {}).get("reddit_bonus", 0))
+        # 3. LLM / Direct Search Semantic Fit Bonus (+24 pts)
         semantic_bonus = 24 if aid in llm_prioritized_appids else 0
-        # 3. Indie & Cult-Classic Hidden Gem Boost (+16 pts for Indie tag or <45k reviews with strong rating)
+        # 4. Indie & Cult-Classic Hidden Gem Boost (+16 pts for Indie tag or <45k reviews with strong rating)
         is_indie = "Indie" in genres or (200 <= total_revs <= 45000)
         indie_bonus = 16 if (is_indie and pos_pct >= 82) else 0
-        # 4. Small tie-breaker for active players (capped at 6 pts so AAA blockbusters never drown out indies)
+        # 5. Small tie-breaker for active players (capped at 6 pts so AAA blockbusters never drown out indies)
         activity_tiebreaker = min(6, int((ccu ** 0.4) / 3)) if ccu > 0 else 0
 
-        composite_score = sentiment_points + semantic_bonus + indie_bonus + activity_tiebreaker
+        composite_score = sentiment_points + reddit_bonus + semantic_bonus + indie_bonus + activity_tiebreaker
 
         review_excerpt = ""
         reviews = (r_res or {}).get("reviews", [])
@@ -556,6 +565,7 @@ async def discover_ranked_games(
                 "total_reviews": total_revs,
                 "positive_percentage": pos_pct
             },
+            "reddit": reddit_data,
             "owners_estimate": (sp_res or {}).get("owners_estimate", "Unknown"),
             "average_playtime_forever": (sp_res or {}).get("average_forever_hours"),
             "hltb": hltb_data,

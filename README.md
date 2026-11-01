@@ -26,9 +26,10 @@ Unlike the local desktop edition (`vibe-code-SteamRAG`), **SteamRAG Cloud Server
 - Syncs your Steam persona, avatar, and owned games + playtimes via Steam Community XML (`?xml=1`), `IPlayerService/GetOwnedGames/v1/`, and local library metadata.
 - Tailors both game recommendations and the **dynamic background slideshow** to your top-played games.
 
-### 4. 📊 Multi-Source Real-Time Game Intelligence
+### 4. 📊 Multi-Source Real-Time Game Intelligence (Steam + Reddit + HLTB + Metacritic)
+- **Live Reddit Reviews & Consensus (`reddit_reviews.py`)**: Pulls live recommendation threads and upvote ratios on demand from `r/ShouldIbuythisgame`, `r/gamingsuggestions`, `r/patientgamers`, `r/indiegaming`, `r/pcgaming`, and `r/Games`.
 - **HowLongToBeat (HLTB)**: Main Story, Main + Extra, and 100% Completionist hours.
-- **Critical vs. Community Consensus**: Metacritic critic score alongside Steam positive review percentage and total review volume.
+- **Critical vs. Community Consensus**: Metacritic critic score alongside Steam positive review percentage and Reddit community consensus.
 - **Dynamic Gameplay Taxonomy**: Infers combat pacing, progression philosophy, session loop length, and *"Best for..."* tags for any game on Steam.
 - **Live Player Counts & Pricing**: Real-time concurrent players (CCU), current price, and active Steam discounts.
 
@@ -64,6 +65,7 @@ vibe-code-SteamRag-server/
 │   │   │   └── sqlite_db.py        # Async SQLite cache, user sessions & appid dictionary
 │   │   ├── tools/
 │   │   │   ├── game_intelligence.py# HLTB, Metacritic & dynamic gameplay taxonomy
+│   │   │   ├── reddit_reviews.py   # Live Reddit community consensus & recommendation search
 │   │   │   ├── steam_api.py        # Steam Store, Live CCU & Steam Reviews
 │   │   │   ├── steam_discovery.py  # LLM brainstorming + Indie-First multi-source ranker
 │   │   │   └── steamdb_scraper.py  # SteamSpy & SteamDB fallback metrics

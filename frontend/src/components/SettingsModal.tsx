@@ -18,11 +18,6 @@ export const SettingsModal: React.FC<Props> = ({
   onRefreshModels,
 }) => {
   const [geminiKey, setGeminiKey] = useState('');
-  const [googleClientId, setGoogleClientId] = useState('');
-  const [googleClientSecret, setGoogleClientSecret] = useState('');
-  const [showOauthConfig, setShowOauthConfig] = useState(false);
-  const [oauthNotice, setOauthNotice] = useState<string | null>(null);
-
   const [apiKey, setApiKey] = useState('');
   const [cookie, setCookie] = useState('');
   const [saved, setSaved] = useState(false);
@@ -30,17 +25,12 @@ export const SettingsModal: React.FC<Props> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setOauthNotice(null);
       fetch('/api/settings')
         .then((r) => r.json())
         .then((data) => {
           if (data.steam_api_key_configured) setApiKey('••••••••••••••••');
           if (data.steamdb_cookie_configured) setCookie('••••••••••••••••');
           if (data.gemini_api_key_configured) setGeminiKey('••••••••••••••••');
-          if (data.google_oauth_client_configured) {
-            setGoogleClientId('••••••••••••••••');
-            setGoogleClientSecret('••••••••••••••••');
-          }
         })
         .catch(console.error);
     }
@@ -55,10 +45,6 @@ export const SettingsModal: React.FC<Props> = ({
       if (apiKey && !apiKey.startsWith('••••')) payload.steam_api_key = apiKey;
       if (cookie && !cookie.startsWith('••••')) payload.steamdb_cookie = cookie;
       if (geminiKey && !geminiKey.startsWith('••••')) payload.gemini_api_key = geminiKey;
-      if (googleClientId && !googleClientId.startsWith('••••'))
-        payload.google_client_id = googleClientId;
-      if (googleClientSecret && !googleClientSecret.startsWith('••••'))
-        payload.google_client_secret = googleClientSecret;
 
       await fetch('/api/settings', {
         method: 'POST',
@@ -76,31 +62,7 @@ export const SettingsModal: React.FC<Props> = ({
     }
   };
 
-  const handleGoogleOAuthSignIn = async () => {
-    const hasId = Boolean(googleClientId.trim());
-    const hasSecret = Boolean(googleClientSecret.trim());
-
-    if (!hasId || !hasSecret) {
-      setShowOauthConfig(true);
-      setOauthNotice(
-        'To use Google OAuth 2.0, enter your Google Cloud OAuth Client ID & Secret below first — or use Option A above to sign in with Google AI Studio in 1 click without creating an OAuth client.'
-      );
-      return;
-    }
-
-    setOauthNotice(null);
-    if (!googleClientId.startsWith('••••') || !googleClientSecret.startsWith('••••')) {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          google_client_id: googleClientId.startsWith('••••') ? undefined : googleClientId.trim(),
-          google_client_secret: googleClientSecret.startsWith('••••')
-            ? undefined
-            : googleClientSecret.trim(),
-        }),
-      });
-    }
+  const handleGoogleOAuthSignIn = () => {
     const returnUrl = encodeURIComponent(window.location.origin);
     window.location.href = `/api/auth/google/login?frontend_return=${returnUrl}`;
   };
@@ -132,12 +94,12 @@ export const SettingsModal: React.FC<Props> = ({
         {/* Form Body */}
         <div className="p-5 space-y-5 overflow-y-auto">
           {/* Google Gemini Cloud Section */}
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-3.5">
+          <div className="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
                 <span className="text-sm font-bold text-white">
-                  Google Gemini Cloud Models (gemini-2.5-flash & pro)
+                  Google Gemini Cloud Models
                 </span>
               </div>
               {googleStatus?.connected && (
@@ -176,92 +138,12 @@ export const SettingsModal: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Option 1: 1-Click Google AI Studio Free Key */}
+            {/* Option 1: Direct Google Account OAuth 2.0 Redirect */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-slate-300">
-                  Option A: Google AI Studio Key (Fastest • Free Tier Included)
-                </label>
-                <a
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center space-x-1 font-medium"
-                >
-                  <span>Sign in & Get Key</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <input
-                type="password"
-                placeholder="Paste AIzaSy... key from Google AI Studio"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-
-            {/* Option 2: Google OAuth 2.0 Sign-In */}
-            <div className="pt-2 border-t border-slate-800/80">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-slate-300">
-                  Option B: Google Account OAuth 2.0 Sign-In
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowOauthConfig(!showOauthConfig)}
-                  className="text-[11px] text-slate-400 hover:text-cyan-400 underline cursor-pointer"
-                >
-                  {showOauthConfig ? 'Hide OAuth Client Setup' : 'Configure OAuth Client ID'}
-                </button>
-              </div>
-
-              {oauthNotice && (
-                <div className="mb-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed">
-                  {oauthNotice}
-                </div>
-              )}
-
-              {showOauthConfig && (
-                <div className="space-y-2 mb-3 p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 font-medium">
-                      Google Cloud OAuth 2.0 Web Client
-                    </span>
-                    <a
-                      href="https://console.cloud.google.com/apis/credentials"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center space-x-1"
-                    >
-                      <span>Open Cloud Console</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Google OAuth Client ID (....apps.googleusercontent.com)"
-                    value={googleClientId}
-                    onChange={(e) => setGoogleClientId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Google OAuth Client Secret"
-                    value={googleClientSecret}
-                    onChange={(e) => setGoogleClientSecret(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                  />
-                  <p className="text-[10px] text-slate-500">
-                    Authorized Redirect URI: <code className="text-cyan-400">http://localhost:8000/api/auth/google/callback</code>
-                  </p>
-                </div>
-              )}
-
               <button
                 type="button"
                 onClick={handleGoogleOAuthSignIn}
-                className="w-full py-2 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs flex items-center justify-center space-x-2 shadow transition-colors cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs flex items-center justify-center space-x-2 shadow transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -281,8 +163,33 @@ export const SettingsModal: React.FC<Props> = ({
                     d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"
                   />
                 </svg>
-                <span>Sign in with Google Account (OAuth 2.0)</span>
+                <span>Sign in with Google Account</span>
               </button>
+            </div>
+
+            {/* Option 2: Google AI Studio API Key */}
+            <div className="pt-3 border-t border-slate-800/80">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-slate-300">
+                  Or use a Google AI Studio API Key
+                </label>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center space-x-1 font-medium"
+                >
+                  <span>Get Key</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <input
+                type="password"
+                placeholder="Paste AIzaSy... key from Google AI Studio"
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
             </div>
           </div>
 
@@ -317,7 +224,7 @@ export const SettingsModal: React.FC<Props> = ({
           <div className="p-3 rounded-lg bg-indigo-950/30 border border-indigo-900/50 flex items-start space-x-2 text-xs text-indigo-300">
             <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
             <span>
-              All tokens and keys are stored locally in your SQLite database on your machine.
+              All tokens and keys are stored securely in the server SQLite database.
             </span>
           </div>
 

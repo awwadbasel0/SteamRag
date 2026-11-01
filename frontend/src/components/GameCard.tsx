@@ -51,6 +51,14 @@ export const GameCard: React.FC<Props> = ({ data }) => {
                     Meta: {data.metacritic}
                   </span>
                 )}
+                {data.reddit?.upvote_percentage && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded font-bold font-mono bg-orange-500/20 text-orange-300 border border-orange-500/40"
+                    title={`Reddit Consensus: ${data.reddit.sentiment}`}
+                  >
+                    Reddit: {data.reddit.upvote_percentage}%
+                  </span>
+                )}
                 {data.appid && (
                   <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-700">
                     AppID: {data.appid}

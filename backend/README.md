@@ -16,6 +16,8 @@ FastAPI + Async SQLite backend for **SteamRAG Cloud Server Edition**. Performs 2
 - **[`app/tools/steam_discovery.py`](app/tools/steam_discovery.py)**:
   - Combines **Step 1 Gemini Indie/Niche Brainstorming**, curated sub-genre pools, and live Steam Store keyword search.
   - Scores candidates with an **Indie-First Ranking Formula** and rolling anti-repetition memory (`_RECENTLY_RECOMMENDED_APPIDS`).
+- **[`app/tools/reddit_reviews.py`](app/tools/reddit_reviews.py)**:
+  - Queries Reddit's live `.json` endpoints (`r/gamingsuggestions`, `r/ShouldIbuythisgame`, `r/patientgamers`, `r/indiegaming`, `r/pcgaming`, `r/Games`) on demand to harvest community recommendations and compute weighted upvote consensus + top thread excerpts.
 - **[`app/api/routes_auth.py`](app/api/routes_auth.py)**:
   - Handles **Steam OpenID 2.0** login (`/api/auth/steam/login`, `/api/auth/steam/callback`), multi-source Steam library & playtime syncing (`/api/auth/sync`), and **Google OAuth 2.0** (`/api/auth/google/login`, `/api/auth/google/callback`).
 - **[`app/main.py`](app/main.py)**:

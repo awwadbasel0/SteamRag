@@ -20,7 +20,7 @@ interface Props {
   onAskAboutGame?: (gameName: string) => void;
 }
 
-type SortOption = 'rank' | 'ccu' | 'rating' | 'price' | 'reviews' | 'hltb_short' | 'hltb_long';
+type SortOption = 'rank' | 'ccu' | 'rating' | 'reddit' | 'price' | 'reviews' | 'hltb_short' | 'hltb_long';
 
 export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -53,6 +53,11 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
           return (
             (b.review_summary?.positive_percentage || 0) -
             (a.review_summary?.positive_percentage || 0)
+          );
+        case 'reddit':
+          return (
+            (b.reddit?.upvote_percentage || 0) -
+            (a.reddit?.upvote_percentage || 0)
           );
         case 'reviews':
           return (
@@ -246,7 +251,10 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                     🎯 Best Match
                   </option>
                   <option value="rating" className="bg-slate-900">
-                    ⭐ Highest Rated
+                    ⭐ Highest Rated (Steam)
+                  </option>
+                  <option value="reddit" className="bg-slate-900">
+                    💬 Reddit Consensus
                   </option>
                   <option value="ccu" className="bg-slate-900">
                     🔥 Most Played Now
@@ -332,6 +340,14 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                             Meta {game.metacritic}
                           </span>
                         )}
+                        {game.reddit?.upvote_percentage && (
+                          <span
+                            className="text-[11px] bg-orange-950/90 text-orange-300 border border-orange-500/40 font-mono font-bold px-2 py-0.5 rounded shadow"
+                            title={`Reddit: ${game.reddit.sentiment} (${game.reddit.thread_count} threads)`}
+                          >
+                            Reddit {game.reddit.upvote_percentage}%
+                          </span>
+                        )}
                       </div>
 
                       {/* External Links */}
@@ -410,6 +426,24 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                             <span>{game.taxonomy.pacing}</span>
                           </div>
                         </div>
+                      )}
+
+                      {/* Top Reddit Community Thread */}
+                      {game.reddit?.top_threads && game.reddit.top_threads.length > 0 && (
+                        <a
+                          href={game.reddit.top_threads[0].url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-2.5 rounded-lg bg-orange-950/20 hover:bg-orange-950/35 border border-orange-500/25 text-xs transition-colors"
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-orange-300 font-mono mb-0.5">
+                            <span>{game.reddit.top_threads[0].subreddit} • {game.reddit.sentiment}</span>
+                            <span>▲ {game.reddit.top_threads[0].score}</span>
+                          </div>
+                          <p className="text-slate-200 font-medium line-clamp-1">
+                            "{game.reddit.top_threads[0].title}"
+                          </p>
+                        </a>
                       )}
 
                       {/* Snippet */}
