@@ -6,6 +6,7 @@ interface Props {
   activeModel: string;
   onSelectModel: (name: string) => void;
   installedModels: OllamaModel[];
+  modelsLoading: boolean;
   userProfile: UserProfile | null;
   googleStatus: GoogleAuthStatus | null;
   onOpenSettings: () => void;
@@ -17,6 +18,7 @@ export const Navbar: React.FC<Props> = ({
   activeModel,
   onSelectModel,
   installedModels,
+  modelsLoading,
   userProfile,
   googleStatus,
   onOpenSettings,
@@ -62,7 +64,12 @@ export const Navbar: React.FC<Props> = ({
       {/* Right Controls */}
       <div className="flex items-center space-x-2 sm:space-x-3">
         {/* Gemini Cloud Model Selector Dropdown */}
-        {installedModels.length > 0 ? (
+        {modelsLoading ? (
+          <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-slate-900 border border-cyan-500/30 text-cyan-300 text-xs font-medium">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+            <span>Loading Models...</span>
+          </div>
+        ) : installedModels.length > 0 ? (
           <div className="relative flex items-center">
             <select
               value={activeModel}

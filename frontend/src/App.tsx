@@ -7,7 +7,7 @@ import { MarkdownRenderer } from './components/MarkdownRenderer';
 import { SettingsModal } from './components/SettingsModal';
 import { DynamicGameBackdrop } from './components/DynamicGameBackdrop';
 import type { Message, OllamaModel, UserProfile, GoogleAuthStatus, GameCardData } from './types';
-import { Send, Bot, User, Compass, TrendingUp, DollarSign, Sparkles, Gamepad, ArrowDown } from 'lucide-react';
+import { Send, Bot, User, Compass, TrendingUp, DollarSign, Sparkles, Gamepad, ArrowDown, RefreshCw } from 'lucide-react';
 
 const GENERAL_SUGGESTIONS = [
   {
@@ -43,7 +43,8 @@ export const App: React.FC = () => {
   ]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [activeModel, setActiveModel] = useState<string>('gemini-2.0-flash');
+  const [modelsLoading, setModelsLoading] = useState<boolean>(true);
+  const [activeModel, setActiveModel] = useState<string>('');
   const [installedModels, setInstalledModels] = useState<OllamaModel[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [googleStatus, setGoogleStatus] = useState<GoogleAuthStatus | null>(null);
@@ -99,6 +100,7 @@ export const App: React.FC = () => {
   }, [messages]);
 
   const fetchModels = async () => {
+    setModelsLoading(true);
     try {
       const res = await fetch('/api/models');
       const data = await res.json();
@@ -107,9 +109,14 @@ export const App: React.FC = () => {
         setActiveModel(data.models[0].name);
       } else {
         setInstalledModels([]);
+        setActiveModel('');
       }
     } catch (e) {
       console.error('Failed to load cloud models', e);
+      setInstalledModels([]);
+      setActiveModel('');
+    } finally {
+      setModelsLoading(false);
     }
   };
 
@@ -175,7 +182,7 @@ export const App: React.FC = () => {
 
   const handleSend = async (messageText: string) => {
     const text = messageText.trim();
-    if (!text || loading) return;
+    if (!text || loading || modelsLoading || !activeModel || installedModels.length === 0) return;
 
     const userMsgId = 'user-' + Date.now();
     const assistantMsgId = 'assistant-' + Date.now();
@@ -388,6 +395,7 @@ export const App: React.FC = () => {
         activeModel={activeModel}
         onSelectModel={setActiveModel}
         installedModels={installedModels}
+        modelsLoading={modelsLoading}
         userProfile={userProfile}
         googleStatus={googleStatus}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -499,11 +507,17 @@ export const App: React.FC = () => {
           <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {suggestions.map((item, idx) => {
               const Icon = item.icon;
+              const isDisabled = modelsLoading || installedModels.length === 0 || !activeModel;
               return (
                 <button
                   key={idx}
+                  disabled={isDisabled}
                   onClick={() => handleSend(item.prompt)}
-                  className="p-3.5 rounded-xl border border-white/10 bg-slate-900/65 hover:bg-slate-800/80 hover:border-cyan-500/40 backdrop-blur-xl text-left transition-all group flex items-start space-x-3 cursor-pointer shadow-lg shadow-black/30"
+                  className={`p-3.5 rounded-xl border border-white/10 bg-slate-900/65 backdrop-blur-xl text-left transition-all group flex items-start space-x-3 shadow-lg shadow-black/30 ${
+                    isDisabled
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-slate-800/80 hover:border-cyan-500/40 cursor-pointer'
+                  }`}
                 >
                   <div className="p-2 rounded-lg bg-slate-800/90 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-colors">
                     <Icon className="w-4 h-4" />
@@ -541,6 +555,12 @@ export const App: React.FC = () => {
 
         {/* Fixed Bottom Input Bar */}
         <div className="sticky bottom-4 w-full z-30">
+          {modelsLoading && (
+            <div className="mb-2.5 px-4 py-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 backdrop-blur-xl flex items-center justify-center space-x-2.5 text-xs text-cyan-200 shadow-lg">
+              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
+              <span>Probing and verifying available Gemini models — please wait before sending a message...</span>
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -550,15 +570,21 @@ export const App: React.FC = () => {
           >
             <input
               type="text"
-              placeholder="Search specific game or ask to rank games (e.g. 'Find and rank games like Hades', 'Cozy tavern sim')..."
+              placeholder={
+                modelsLoading
+                  ? 'Waiting for Gemini models to finish loading...'
+                  : installedModels.length === 0
+                  ? 'Connect Google Gemini in the top-right to start chatting...'
+                  : "Search specific game or ask to rank games (e.g. 'Find and rank games like Hades', 'Cozy tavern sim')..."
+              }
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-              className="flex-1 bg-transparent px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none"
+              disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel}
+              className="flex-1 bg-transparent px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="submit"
-              disabled={loading || !input.trim()}
+              disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel || !input.trim()}
               className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-medium shadow-md shadow-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
             >
               <Send className="w-4 h-4" />
@@ -568,10 +594,13 @@ export const App: React.FC = () => {
             <span>
               {userProfile?.authenticated
                 ? `Logged in as ${userProfile.personaname} • Steam Library Connected`
-                : 'Multi-Source: Steam, SteamDB, HowLongToBeat & Metacritic'}
+                : 'Multi-Source: Steam, Reddit, HowLongToBeat & Metacritic'}
             </span>
             <span>
-              Active Model: <span className="font-mono text-cyan-400">{activeModel}</span>
+              Active Model:{' '}
+              <span className="font-mono text-cyan-400">
+                {modelsLoading ? 'Loading models...' : activeModel || 'None'}
+              </span>
             </span>
           </div>
         </div>
