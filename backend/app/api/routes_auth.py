@@ -12,10 +12,14 @@ import aiosqlite
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from app.config import settings
+from app.core.session_ctx import COOKIE_NAME, get_visitor_id, set_visitor_id
 from app.db.sqlite_db import (
     save_user_session,
     get_current_user_session,
     logout_user_session,
+    get_visitor_settings,
+    set_visitor_setting,
+    delete_visitor_settings,
     get_app_names_by_ids,
     save_app_name,
     POPULAR_SEEDS,
@@ -33,14 +37,40 @@ SKIP_TOOL_APPIDS = {
 SEED_NAME_MAP = {appid: name for appid, name in POPULAR_SEEDS}
 
 
+def _get_external_base_url(request: Request) -> str:
+    """
+    Determines the external public base URL of this server, respecting
+    X-Forwarded-Proto and X-Forwarded-Host headers behind cloud reverse proxies.
+    """
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    scheme = forwarded_proto.split(",")[0].strip() if forwarded_proto else request.url.scheme
+    forwarded_host = request.headers.get("x-forwarded-host", "")
+    host = forwarded_host.split(",")[0].strip() if forwarded_host else (request.headers.get("host") or request.url.netloc)
+    return f"{scheme}://{host}".rstrip("/")
+
+
+def _attach_sid_cookie(response: RedirectResponse, request: Request, sid: str) -> RedirectResponse:
+    """Ensures the visitor session cookie is persisted on OAuth redirect responses."""
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    is_https = (forwarded_proto.split(",")[0].strip() if forwarded_proto else request.url.scheme) == "https"
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=sid,
+        max_age=60 * 60 * 24 * 90,
+        httponly=True,
+        samesite="lax",
+        secure=is_https,
+        path="/",
+    )
+    return response
+
+
 async def _get_configured_steam_api_key() -> str:
-    """Checks SQLite user_settings first, then environment settings for a Steam Web API Key."""
+    """Checks current visitor's SQLite settings first, then environment settings for a Steam Web API Key."""
     try:
-        async with aiosqlite.connect(settings.DB_PATH) as db:
-            cursor = await db.execute("SELECT value FROM user_settings WHERE key = 'steam_api_key'")
-            row = await cursor.fetchone()
-            if row and row[0]:
-                return str(row[0]).strip()
+        kv = await get_visitor_settings()
+        if kv.get("steam_api_key"):
+            return str(kv["steam_api_key"]).strip()
     except Exception:
         pass
     return settings.STEAM_API_KEY or ""
@@ -192,9 +222,12 @@ async def steam_login(request: Request, frontend_return: str = "http://localhost
     Redirects user to official Steam OpenID 2.0 Login page.
     No developer API key required.
     """
-    # Detect base URL of this backend server
-    backend_base = str(request.base_url).rstrip("/")
-    callback_url = f"{backend_base}/api/auth/steam/callback?frontend_return={urllib.parse.quote(frontend_return)}"
+    sid = get_visitor_id()
+    backend_base = _get_external_base_url(request)
+    callback_url = (
+        f"{backend_base}/api/auth/steam/callback"
+        f"?frontend_return={urllib.parse.quote(frontend_return)}&sid={urllib.parse.quote(sid)}"
+    )
 
     params = {
         "openid.ns": "http://specs.openid.net/auth/2.0",
@@ -205,14 +238,15 @@ async def steam_login(request: Request, frontend_return: str = "http://localhost
         "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
     }
     steam_url = f"{STEAM_OPENID_URL}?{urllib.parse.urlencode(params)}"
-    return RedirectResponse(url=steam_url, status_code=303)
+    return _attach_sid_cookie(RedirectResponse(url=steam_url, status_code=303), request, sid)
 
 @router.get("/steam/callback")
-async def steam_callback(request: Request, frontend_return: str = "http://localhost:5173"):
+async def steam_callback(request: Request, frontend_return: str = "http://localhost:5173", sid: str = ""):
     """
     Validates Steam OpenID return signature and extracts SteamID64,
-    then fetches public profile data and persists the session.
+    then fetches public profile data and persists the session for this visitor.
     """
+    active_sid = set_visitor_id(sid or request.cookies.get(COOKIE_NAME) or get_visitor_id())
     query_params = dict(request.query_params)
     
     # Validation payload: copy all openid.* params and switch mode to check_authentication
@@ -227,23 +261,39 @@ async def steam_callback(request: Request, frontend_return: str = "http://localh
         async with httpx.AsyncClient(timeout=10.0) as client:
             verify_resp = await client.post(STEAM_OPENID_URL, data=validation_params)
             if "is_valid:true" not in verify_resp.text:
-                return RedirectResponse(url=f"{frontend_return}?auth_error=verification_failed")
+                return _attach_sid_cookie(
+                    RedirectResponse(url=f"{frontend_return}?auth_error=verification_failed"),
+                    request,
+                    active_sid,
+                )
     except Exception as e:
         print(f"Steam verification network error: {e}")
-        return RedirectResponse(url=f"{frontend_return}?auth_error=network_error")
+        return _attach_sid_cookie(
+            RedirectResponse(url=f"{frontend_return}?auth_error=network_error"),
+            request,
+            active_sid,
+        )
 
     # Extract SteamID64 from claimed_id (e.g. https://steamcommunity.com/openid/id/76561198...)
     claimed_id = query_params.get("openid.claimed_id", "")
     match = re.search(r"/id/(\d+)$", claimed_id)
     if not match:
-        return RedirectResponse(url=f"{frontend_return}?auth_error=invalid_steamid")
+        return _attach_sid_cookie(
+            RedirectResponse(url=f"{frontend_return}?auth_error=invalid_steamid"),
+            request,
+            active_sid,
+        )
 
     steamid = match.group(1)
 
-    # Sync profile and multi-source library (XML + Steam Web API + Local Steam Client)
+    # Sync profile and multi-source library for this isolated visitor
     await sync_steam_profile_and_library(steamid)
 
-    return RedirectResponse(url=f"{frontend_return}?auth_success=1&steamid={steamid}")
+    return _attach_sid_cookie(
+        RedirectResponse(url=f"{frontend_return}?auth_success=1&steamid={steamid}"),
+        request,
+        active_sid,
+    )
 
 
 @router.get("/me")
@@ -294,21 +344,17 @@ GOOGLE_SCOPES = (
 
 async def get_valid_gemini_credentials() -> Optional[Dict[str, str]]:
     """
-    Resolves active Gemini credentials in priority order:
-    1. Google OAuth 2.0 session stored in SQLite (auto-refreshes expired access_token)
-    2. Google AI Studio API Key stored in SQLite or environment
-    3. Local Google Cloud Application Default Credentials (~/.config/gcloud/application_default_credentials.json)
+    Resolves active Gemini credentials for the current visitor in priority order:
+    1. Visitor's Google OAuth 2.0 session stored in SQLite (auto-refreshes expired access_token)
+    2. Visitor's Google AI Studio API Key stored in SQLite (or server default GEMINI_API_KEY)
     """
     kv: Dict[str, str] = {}
     try:
-        async with aiosqlite.connect(settings.DB_PATH) as db:
-            cursor = await db.execute("SELECT key, value FROM user_settings")
-            rows = await cursor.fetchall()
-            kv = {k: v for k, v in rows if v}
+        kv = await get_visitor_settings()
     except Exception:
         pass
 
-    # 1. Check Google OAuth 2.0 session
+    # 1. Check visitor's Google OAuth 2.0 session
     if kv.get("google_oauth_session"):
         try:
             sess = json.loads(kv["google_oauth_session"])
@@ -338,17 +384,12 @@ async def get_valid_gemini_credentials() -> Optional[Dict[str, str]]:
                         if new_token:
                             sess["access_token"] = new_token
                             sess["expires_at"] = time.time() + int(tdata.get("expires_in", 3600))
-                            async with aiosqlite.connect(settings.DB_PATH) as db:
-                                await db.execute(
-                                    "INSERT OR REPLACE INTO user_settings (key, value) VALUES ('google_oauth_session', ?)",
-                                    (json.dumps(sess),),
-                                )
-                                await db.commit()
+                            await set_visitor_setting("google_oauth_session", json.dumps(sess))
                             return {"type": "bearer", "token": new_token}
         except Exception as e:
             print(f"Error refreshing Google OAuth token: {e}")
 
-    # 2. Check Google AI Studio API Key
+    # 2. Check visitor's Google AI Studio API Key or server fallback
     api_key = kv.get("gemini_api_key") or settings.GEMINI_API_KEY
     if api_key:
         return {"type": "api_key", "token": api_key.strip()}
@@ -358,13 +399,10 @@ async def get_valid_gemini_credentials() -> Optional[Dict[str, str]]:
 
 @router.get("/google/status")
 async def google_auth_status():
-    """Returns current Google OAuth / Gemini API connection status."""
+    """Returns current visitor's Google OAuth / Gemini API connection status."""
     kv: Dict[str, str] = {}
     try:
-        async with aiosqlite.connect(settings.DB_PATH) as db:
-            cursor = await db.execute("SELECT key, value FROM user_settings")
-            rows = await cursor.fetchall()
-            kv = {k: v for k, v in rows if v}
+        kv = await get_visitor_settings()
     except Exception:
         pass
 
@@ -405,27 +443,28 @@ async def google_login(request: Request, frontend_return: str = "http://localhos
     Initiates Google OAuth 2.0 Sign-In for Gemini API access.
     If Google OAuth Client ID is not yet configured, redirects back to open the Google Setup dialog.
     """
+    sid = get_visitor_id()
     client_id = settings.GOOGLE_CLIENT_ID
     client_secret = settings.GOOGLE_CLIENT_SECRET
     try:
-        async with aiosqlite.connect(settings.DB_PATH) as db:
-            cursor = await db.execute(
-                "SELECT key, value FROM user_settings WHERE key IN ('google_client_id', 'google_client_secret')"
-            )
-            rows = await cursor.fetchall()
-            for k, v in rows:
-                if k == "google_client_id" and v:
-                    client_id = v.strip()
-                elif k == "google_client_secret" and v:
-                    client_secret = v.strip()
+        kv = await get_visitor_settings(sid)
+        if kv.get("google_client_id"):
+            client_id = kv["google_client_id"].strip()
+        if kv.get("google_client_secret"):
+            client_secret = kv["google_client_secret"].strip()
     except Exception:
         pass
 
     if not client_id or not client_secret:
-        return RedirectResponse(url=f"{frontend_return}?open_google_setup=1", status_code=303)
+        return _attach_sid_cookie(
+            RedirectResponse(url=f"{frontend_return}?open_google_setup=1", status_code=303),
+            request,
+            sid,
+        )
 
-    backend_base = str(request.base_url).rstrip("/")
+    backend_base = _get_external_base_url(request)
     redirect_uri = f"{backend_base}/api/auth/google/callback"
+    state_payload = json.dumps({"ret": frontend_return, "sid": sid})
 
     params = {
         "client_id": client_id,
@@ -434,36 +473,49 @@ async def google_login(request: Request, frontend_return: str = "http://localhos
         "scope": GOOGLE_SCOPES,
         "access_type": "offline",
         "prompt": "consent",
-        "state": frontend_return,
+        "state": state_payload,
     }
     auth_url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
-    return RedirectResponse(url=auth_url, status_code=303)
+    return _attach_sid_cookie(RedirectResponse(url=auth_url, status_code=303), request, sid)
 
 
 @router.get("/google/callback")
 async def google_callback(request: Request, code: str = "", state: str = "http://localhost:5173", error: str = ""):
-    """Handles Google OAuth 2.0 callback, exchanges code for tokens, and stores user profile."""
-    frontend_return = state or "http://localhost:5173"
+    """Handles Google OAuth 2.0 callback, exchanges code for tokens, and stores user profile for this visitor."""
+    frontend_return = "http://localhost:5173"
+    state_sid = ""
+    if state:
+        try:
+            parsed_state = json.loads(state)
+            if isinstance(parsed_state, dict):
+                frontend_return = parsed_state.get("ret") or frontend_return
+                state_sid = parsed_state.get("sid") or ""
+            else:
+                frontend_return = state
+        except Exception:
+            frontend_return = state
+
+    active_sid = set_visitor_id(state_sid or request.cookies.get(COOKIE_NAME) or get_visitor_id())
+
     if error or not code:
-        return RedirectResponse(url=f"{frontend_return}?google_auth_error={urllib.parse.quote(error or 'missing_code')}")
+        return _attach_sid_cookie(
+            RedirectResponse(url=f"{frontend_return}?google_auth_error={urllib.parse.quote(error or 'missing_code')}"),
+            request,
+            active_sid,
+        )
 
     client_id = settings.GOOGLE_CLIENT_ID
     client_secret = settings.GOOGLE_CLIENT_SECRET
     try:
-        async with aiosqlite.connect(settings.DB_PATH) as db:
-            cursor = await db.execute(
-                "SELECT key, value FROM user_settings WHERE key IN ('google_client_id', 'google_client_secret')"
-            )
-            rows = await cursor.fetchall()
-            for k, v in rows:
-                if k == "google_client_id" and v:
-                    client_id = v.strip()
-                elif k == "google_client_secret" and v:
-                    client_secret = v.strip()
+        kv = await get_visitor_settings(active_sid)
+        if kv.get("google_client_id"):
+            client_id = kv["google_client_id"].strip()
+        if kv.get("google_client_secret"):
+            client_secret = kv["google_client_secret"].strip()
     except Exception:
         pass
 
-    backend_base = str(request.base_url).rstrip("/")
+    backend_base = _get_external_base_url(request)
     redirect_uri = f"{backend_base}/api/auth/google/callback"
 
     try:
@@ -479,7 +531,11 @@ async def google_callback(request: Request, code: str = "", state: str = "http:/
                 },
             )
             if token_resp.status_code != 200:
-                return RedirectResponse(url=f"{frontend_return}?google_auth_error=token_exchange_failed")
+                return _attach_sid_cookie(
+                    RedirectResponse(url=f"{frontend_return}?google_auth_error=token_exchange_failed"),
+                    request,
+                    active_sid,
+                )
 
             token_data = token_resp.json()
             access_token = token_data.get("access_token", "")
@@ -509,24 +565,24 @@ async def google_callback(request: Request, code: str = "", state: str = "http:/
                 "picture": user_info["picture"],
             }
 
-            async with aiosqlite.connect(settings.DB_PATH) as db:
-                await db.execute(
-                    "INSERT OR REPLACE INTO user_settings (key, value) VALUES ('google_oauth_session', ?)",
-                    (json.dumps(session_payload),),
-                )
-                await db.commit()
+            await set_visitor_setting("google_oauth_session", json.dumps(session_payload), visitor_id=active_sid)
 
-            return RedirectResponse(url=f"{frontend_return}?google_auth_success=1")
+            return _attach_sid_cookie(
+                RedirectResponse(url=f"{frontend_return}?google_auth_success=1"),
+                request,
+                active_sid,
+            )
     except Exception as e:
         print(f"Google OAuth callback error: {e}")
-        return RedirectResponse(url=f"{frontend_return}?google_auth_error=exception")
+        return _attach_sid_cookie(
+            RedirectResponse(url=f"{frontend_return}?google_auth_error=exception"),
+            request,
+            active_sid,
+        )
 
 
 @router.post("/google/logout")
 async def google_logout():
-    """Disconnects Google OAuth session and Gemini API key."""
-    async with aiosqlite.connect(settings.DB_PATH) as db:
-        await db.execute("DELETE FROM user_settings WHERE key IN ('google_oauth_session', 'gemini_api_key')")
-        await db.commit()
-    settings.GEMINI_API_KEY = ""
+    """Disconnects the current visitor's Google OAuth session and Gemini API key."""
+    await delete_visitor_settings(["google_oauth_session", "gemini_api_key"])
     return {"connected": False, "status": "logged_out"}

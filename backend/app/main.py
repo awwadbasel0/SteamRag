@@ -1,10 +1,12 @@
+import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.db.sqlite_db import init_db
+from app.core.session_ctx import COOKIE_NAME, set_visitor_id
 from app.api.routes_chat import router as chat_router
 from app.api.routes_models import router as models_router
 from app.api.routes_games import router as games_router
@@ -34,6 +36,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def visitor_session_middleware(request: Request, call_next):
+    """Assigns and isolates a unique HttpOnly session cookie (steamrag_sid) per browser visitor."""
+    incoming_sid = request.cookies.get(COOKIE_NAME) or request.query_params.get("sid")
+    is_new_cookie = not bool(request.cookies.get(COOKIE_NAME))
+    sid = set_visitor_id(incoming_sid or uuid.uuid4().hex)
+
+    response = await call_next(request)
+
+    if is_new_cookie and COOKIE_NAME not in response.headers.get("set-cookie", ""):
+        forwarded_proto = request.headers.get("x-forwarded-proto", "")
+        is_https = (forwarded_proto.split(",")[0].strip() if forwarded_proto else request.url.scheme) == "https"
+        response.set_cookie(
+            key=COOKIE_NAME,
+            value=sid,
+            max_age=60 * 60 * 24 * 90,  # 90 days
+            httponly=True,
+            samesite="lax",
+            secure=is_https,
+            path="/",
+        )
+    return response
 
 app.include_router(chat_router)
 app.include_router(models_router)

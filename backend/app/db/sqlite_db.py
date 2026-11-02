@@ -4,6 +4,7 @@ import json
 import re
 from typing import Optional, Dict, Any, List
 from app.config import settings
+from app.core.session_ctx import get_visitor_id
 
 POPULAR_SEEDS = [
     (553850, "HELLDIVERS™ 2"),
@@ -150,6 +151,20 @@ async def init_db():
             )
         """)
 
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS visitor_auth (
+                visitor_id TEXT PRIMARY KEY,
+                steamid TEXT NOT NULL,
+                personaname TEXT,
+                avatar_url TEXT,
+                profile_url TEXT,
+                summary TEXT,
+                games_json TEXT,
+                logged_in_at REAL NOT NULL,
+                is_active INTEGER DEFAULT 1
+            )
+        """)
+
         # Always ensure popular seed games exist in steam_apps
         entries = [(appid, name, normalize_title(name)) for appid, name in POPULAR_SEEDS]
         await db.executemany(
@@ -205,8 +220,104 @@ async def cache_set(key: str, value: Any, ttl_seconds: int = 600):
         )
         await db.commit()
 
-async def save_user_session(user_data: Dict[str, Any]):
-    """Stores the authenticated Steam user profile and sets it as the active session."""
+async def claim_legacy_session_if_any(visitor_id: Optional[str] = None):
+    """
+    One-time migration helper: if the database contains a legacy global session
+    from before multi-user visitor isolation was enabled, and no visitor has claimed
+    it yet, bind it to this first visitor and remove the global keys so subsequent
+    visitors start with a clean isolated session.
+    """
+    vid = visitor_id or get_visitor_id()
+    if not vid or vid == "default":
+        return
+
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        # 1. Migrate legacy global Steam login if visitor_auth is completely empty
+        cursor = await db.execute("SELECT COUNT(*) FROM visitor_auth")
+        row_count = (await cursor.fetchone())[0]
+        if row_count == 0:
+            cur_legacy = await db.execute(
+                """SELECT steamid, personaname, avatar_url, profile_url, summary, games_json, logged_in_at
+                   FROM user_auth WHERE is_active = 1 ORDER BY logged_in_at DESC LIMIT 1"""
+            )
+            legacy_steam = await cur_legacy.fetchone()
+            if legacy_steam:
+                await db.execute(
+                    """INSERT OR REPLACE INTO visitor_auth
+                       (visitor_id, steamid, personaname, avatar_url, profile_url, summary, games_json, logged_in_at, is_active)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                    (vid, *legacy_steam),
+                )
+                await db.execute("UPDATE user_auth SET is_active = 0")
+
+        # 2. Migrate legacy un-prefixed user_settings keys if any exist
+        legacy_keys = ("google_oauth_session", "gemini_api_key", "steam_api_key", "steamdb_cookie", "default_model")
+        placeholders = ",".join("?" for _ in legacy_keys)
+        cur_settings = await db.execute(
+            f"SELECT key, value FROM user_settings WHERE key IN ({placeholders})",
+            legacy_keys,
+        )
+        rows = await cur_settings.fetchall()
+        if rows:
+            for k, v in rows:
+                if v:
+                    await db.execute(
+                        "INSERT OR REPLACE INTO user_settings (key, value) VALUES (?, ?)",
+                        (f"{vid}:{k}", v),
+                    )
+            await db.execute(f"DELETE FROM user_settings WHERE key IN ({placeholders})", legacy_keys)
+
+        await db.commit()
+
+
+async def get_visitor_settings(visitor_id: Optional[str] = None) -> Dict[str, str]:
+    """Returns all settings scoped to the current visitor cookie."""
+    vid = visitor_id or get_visitor_id()
+    await claim_legacy_session_if_any(vid)
+    prefix = f"{vid}:"
+    result: Dict[str, str] = {}
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT key, value FROM user_settings WHERE key LIKE ?",
+            (f"{prefix}%",),
+        )
+        rows = await cursor.fetchall()
+        for k, v in rows:
+            if k.startswith(prefix) and v:
+                result[k[len(prefix):]] = v
+    return result
+
+
+async def set_visitor_setting(key: str, value: str, visitor_id: Optional[str] = None):
+    """Stores a setting scoped strictly to the current visitor cookie."""
+    vid = visitor_id or get_visitor_id()
+    scoped_key = f"{vid}:{key}"
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO user_settings (key, value) VALUES (?, ?)",
+            (scoped_key, value),
+        )
+        await db.commit()
+
+
+async def delete_visitor_settings(keys: List[str], visitor_id: Optional[str] = None):
+    """Deletes specified setting keys for the current visitor cookie."""
+    if not keys:
+        return
+    vid = visitor_id or get_visitor_id()
+    scoped_keys = [f"{vid}:{k}" for k in keys]
+    placeholders = ",".join("?" for _ in scoped_keys)
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        await db.execute(
+            f"DELETE FROM user_settings WHERE key IN ({placeholders})",
+            tuple(scoped_keys),
+        )
+        await db.commit()
+
+
+async def save_user_session(user_data: Dict[str, Any], visitor_id: Optional[str] = None):
+    """Stores the authenticated Steam user profile scoped to the current visitor."""
+    vid = visitor_id or get_visitor_id()
     now = time.time()
     steamid = str(user_data.get("steamid"))
     personaname = user_data.get("personaname", "Steam User")
@@ -216,22 +327,24 @@ async def save_user_session(user_data: Dict[str, Any]):
     games_json = json.dumps(user_data.get("games", []))
 
     async with aiosqlite.connect(settings.DB_PATH) as db:
-        # Mark all older sessions as inactive
-        await db.execute("UPDATE user_auth SET is_active = 0")
         await db.execute(
-            """INSERT OR REPLACE INTO user_auth 
-               (steamid, personaname, avatar_url, profile_url, summary, games_json, logged_in_at, is_active)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 1)""",
-            (steamid, personaname, avatar_url, profile_url, summary, games_json, now)
+            """INSERT OR REPLACE INTO visitor_auth 
+               (visitor_id, steamid, personaname, avatar_url, profile_url, summary, games_json, logged_in_at, is_active)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+            (vid, steamid, personaname, avatar_url, profile_url, summary, games_json, now),
         )
         await db.commit()
 
-async def get_current_user_session() -> Optional[Dict[str, Any]]:
-    """Retrieves the currently active Steam user session."""
+
+async def get_current_user_session(visitor_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Retrieves the currently active Steam user session for this visitor."""
+    vid = visitor_id or get_visitor_id()
+    await claim_legacy_session_if_any(vid)
     async with aiosqlite.connect(settings.DB_PATH) as db:
         cursor = await db.execute(
             """SELECT steamid, personaname, avatar_url, profile_url, summary, games_json, logged_in_at
-               FROM user_auth WHERE is_active = 1 ORDER BY logged_in_at DESC LIMIT 1"""
+               FROM visitor_auth WHERE visitor_id = ? AND is_active = 1 LIMIT 1""",
+            (vid,),
         )
         row = await cursor.fetchone()
         if row:
@@ -243,13 +356,15 @@ async def get_current_user_session() -> Optional[Dict[str, Any]]:
                 "summary": row[4],
                 "games": json.loads(row[5]) if row[5] else [],
                 "logged_in_at": row[6],
-                "authenticated": True
+                "authenticated": True,
             }
     return None
 
-async def logout_user_session():
-    """Logs out by marking active sessions inactive."""
+
+async def logout_user_session(visitor_id: Optional[str] = None):
+    """Logs out the current visitor's Steam session without affecting other visitors."""
+    vid = visitor_id or get_visitor_id()
     async with aiosqlite.connect(settings.DB_PATH) as db:
-        await db.execute("UPDATE user_auth SET is_active = 0")
+        await db.execute("UPDATE visitor_auth SET is_active = 0 WHERE visitor_id = ?", (vid,))
         await db.commit()
 

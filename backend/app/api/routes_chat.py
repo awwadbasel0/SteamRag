@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from app.core.agent import agent
+from app.core.session_ctx import get_visitor_id, set_visitor_id
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -19,7 +20,10 @@ async def chat_stream_endpoint(req: ChatRequest):
     Server-Sent Events (SSE) streaming endpoint for 2-step Agentic RAG.
     Streams events (planning, tool calls, dynamic embeddings) and generation tokens.
     """
+    vid = get_visitor_id()
+
     async def event_generator():
+        set_visitor_id(vid)
         try:
             async for chunk in agent.execute_rag_pipeline(
                 user_message=req.message,
