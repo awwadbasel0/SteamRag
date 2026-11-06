@@ -37,7 +37,7 @@ SKIP_TOOL_APPIDS = {
 SEED_NAME_MAP = {appid: name for appid, name in POPULAR_SEEDS}
 
 
-def _get_external_base_url(request: Request) -> str:
+def _get_external_base_url(request: Request, frontend_return: str="") -> str:
     """
     Determines the external public base URL of this server, respecting
     X-Forwarded-Proto and X-Forwarded-Host headers behind cloud reverse proxies.
@@ -46,6 +46,11 @@ def _get_external_base_url(request: Request) -> str:
     scheme = forwarded_proto.split(",")[0].strip() if forwarded_proto else request.url.scheme
     forwarded_host = request.headers.get("x-forwarded-host", "")
     host = forwarded_host.split(",")[0].strip() if forwarded_host else (request.headers.get("host") or request.url.netloc)
+
+    hostname_only = host.split(":")[0]
+    if frontend_return and hostname_only not in ("localhost", "127.0.0.1") and "." not in hostname_only:
+        return frontend_return.rstrip("/")
+
     return f"{scheme}://{host}".rstrip("/")
 
 
@@ -223,7 +228,7 @@ async def steam_login(request: Request, frontend_return: str = "http://localhost
     No developer API key required.
     """
     sid = get_visitor_id()
-    backend_base = _get_external_base_url(request)
+    backend_base = _get_external_base_url(request,frontend_return)
     callback_url = (
         f"{backend_base}/api/auth/steam/callback"
         f"?frontend_return={urllib.parse.quote(frontend_return)}&sid={urllib.parse.quote(sid)}"
@@ -462,7 +467,7 @@ async def google_login(request: Request, frontend_return: str = "http://localhos
             sid,
         )
 
-    backend_base = _get_external_base_url(request)
+    backend_base = _get_external_base_url(request,frontend_return)
     redirect_uri = f"{backend_base}/api/auth/google/callback"
     state_payload = json.dumps({"ret": frontend_return, "sid": sid})
 
@@ -515,7 +520,7 @@ async def google_callback(request: Request, code: str = "", state: str = "http:/
     except Exception:
         pass
 
-    backend_base = _get_external_base_url(request)
+    backend_base = _get_external_base_url(request,frontend_return)
     redirect_uri = f"{backend_base}/api/auth/google/callback"
 
     try:
