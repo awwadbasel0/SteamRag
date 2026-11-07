@@ -16,7 +16,7 @@ export default defineConfig(({mode})=>{
     proxy: {
       '/api': {
         target: env.VITE_BACKEND_URL || 'http://backend:8000',
-        changeOrigin: false,
+        changeOrigin: true,
       }
     },
     allowedHosts: [env.VITE_HOST]
