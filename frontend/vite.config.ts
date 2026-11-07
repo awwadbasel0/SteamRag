@@ -16,6 +16,6 @@ export default defineConfig({
         changeOrigin: false,
       }
     },
-    allowedHosts: VITE_HOST
+    allowedHosts: process.env.VITE_HOST
   }
 })
