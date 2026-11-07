@@ -15,6 +15,7 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL || 'http://backend:8000',
         changeOrigin: false,
       }
-    }
+    },
+    allowedHosts: VITE_HOST
   }
 })
