@@ -416,35 +416,44 @@ export const App: React.FC = () => {
                   isUser ? 'flex-row-reverse space-x-reverse' : ''
                 }`}
               >
-                {/* Avatar */}
-                <div
-                  className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg ring-1 ring-white/15 ${
-                    isUser
-                      ? 'bg-gradient-to-tr from-cyan-600 to-sky-500 overflow-hidden'
-                      : 'bg-gradient-to-tr from-indigo-600 to-purple-600'
-                  }`}
-                >
-                  {isUser ? (
-                    userProfile?.avatar_url ? (
-                      <img
-                        src={userProfile.avatar_url}
-                        alt="User"
-                        className="w-full h-full object-cover"
-                      />
+                {/* Avatar with Pop-out shine & ambient aura */}
+                <div className="relative shrink-0">
+                  <div
+                    className={`absolute -inset-0.5 rounded-xl blur-sm -z-10 opacity-70 ${
+                      isUser
+                        ? 'bg-gradient-to-tr from-cyan-400 to-sky-500'
+                        : 'bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400'
+                    }`}
+                  />
+                  <div
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-200 hover:scale-105 ${
+                      isUser
+                        ? 'ring-2 ring-cyan-400/80 bg-gradient-to-tr from-cyan-600 to-sky-500 shadow-[0_0_15px_rgba(6,182,212,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)]'
+                        : 'ring-2 ring-indigo-400/80 bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-500 shadow-[0_0_15px_rgba(99,102,241,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)]'
+                    }`}
+                  >
+                    {isUser ? (
+                      userProfile?.avatar_url ? (
+                        <img
+                          src={userProfile.avatar_url}
+                          alt="User"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-white drop-shadow" />
+                      )
                     ) : (
-                      <User className="w-4 h-4 text-white" />
-                    )
-                  ) : (
-                    <Bot className="w-4 h-4 text-white" />
-                  )}
+                      <Bot className="w-4 h-4 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+                    )}
+                  </div>
                 </div>
 
-                {/* Message Content Bubble */}
+                {/* Message Content Bubble with specular shine & luminous rim */}
                 <div
-                  className={`max-w-[92%] sm:max-w-[88%] rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl ${
+                  className={`max-w-[92%] sm:max-w-[88%] rounded-2xl p-4 sm:p-5 backdrop-blur-2xl transition-all ${
                     isUser
-                      ? 'bg-cyan-950/65 border border-cyan-400/35 text-cyan-50 rounded-tr-none shadow-cyan-950/30'
-                      : 'bg-slate-900/80 border border-white/10 text-slate-100 rounded-tl-none shadow-black/50'
+                      ? 'bg-gradient-to-b from-cyan-950/80 via-slate-900/90 to-slate-950/95 border border-cyan-400/50 text-cyan-50 rounded-tr-none shadow-[0_10px_35px_rgba(0,0,0,0.7),0_0_20px_rgba(6,182,212,0.25),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                      : 'bg-gradient-to-b from-slate-900/85 via-slate-950/90 to-[#070b14]/95 border border-cyan-500/30 hover:border-cyan-400/40 text-slate-100 rounded-tl-none shadow-[0_12px_40px_rgba(0,0,0,0.75),0_0_20px_rgba(6,182,212,0.15),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                   }`}
                 >
                   {/* Step Execution Trace */}
@@ -485,8 +494,8 @@ export const App: React.FC = () => {
                         />
                       ) : (
                         msg.isStreaming && (
-                          <span className="inline-flex items-center space-x-1.5 text-xs text-slate-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                          <span className="inline-flex items-center space-x-2 text-xs text-cyan-300 font-mono">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shadow-[0_0_8px_rgba(6,182,212,1)]" />
                             <span>
                               Searching multi-source catalogs, ranking games, and synthesizing with {activeModel}...
                             </span>
@@ -502,103 +511,118 @@ export const App: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggestion Pills */}
+        {/* Suggestion Pills with pop-out shine & glowing hover */}
         {messages.length === 1 && (
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestions.map((item, idx) => {
               const Icon = item.icon;
               const isDisabled = modelsLoading || installedModels.length === 0 || !activeModel;
               return (
-                <button
-                  key={idx}
-                  disabled={isDisabled}
-                  onClick={() => handleSend(item.prompt)}
-                  className={`p-3.5 rounded-xl border border-white/10 bg-slate-900/65 backdrop-blur-xl text-left transition-all group flex items-start space-x-3 shadow-lg shadow-black/30 ${
-                    isDisabled
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:bg-slate-800/80 hover:border-cyan-500/40 cursor-pointer'
-                  }`}
-                >
-                  <div className="p-2 rounded-lg bg-slate-800/90 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-colors">
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-100 group-hover:text-cyan-200 block transition-colors">
-                      {item.title}
-                    </span>
-                    <span className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                      {item.prompt}
-                    </span>
-                  </div>
-                </button>
+                <div key={idx} className="relative group">
+                  <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-cyan-500/30 via-sky-500/20 to-indigo-500/30 blur-sm -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <button
+                    disabled={isDisabled}
+                    onClick={() => handleSend(item.prompt)}
+                    className={`w-full p-4 rounded-2xl border border-cyan-500/25 bg-gradient-to-b from-slate-900/80 via-slate-950/90 to-slate-950/95 text-left transition-all duration-200 flex items-start space-x-3.5 shadow-[0_6px_20px_rgba(0,0,0,0.5),0_0_15px_rgba(6,182,212,0.12),inset_0_1px_1px_rgba(255,255,255,0.2)] backdrop-blur-xl ${
+                      isDisabled
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-cyan-400 hover:ring-1 hover:ring-cyan-400/50 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6),0_0_22px_rgba(6,182,212,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:-translate-y-1 hover:scale-[1.015] cursor-pointer'
+                    }`}
+                  >
+                    <div className="p-2.5 rounded-xl bg-slate-800/90 border border-cyan-500/40 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] group-hover:bg-cyan-500/20 group-hover:text-cyan-200 group-hover:shadow-[0_0_18px_rgba(6,182,212,0.55)] group-hover:scale-105 transition-all">
+                      <Icon className="w-4 h-4 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-100 group-hover:text-cyan-200 block transition-colors drop-shadow">
+                        {item.title}
+                      </span>
+                      <span className="text-[11px] text-slate-400 line-clamp-1 mt-0.5 group-hover:text-slate-300 transition-colors">
+                        {item.prompt}
+                      </span>
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>
         )}
 
-        {/* Fixed Viewport Jump-to-Bottom Pill (Always stays on screen when scrolled up or streaming) */}
+        {/* Fixed Viewport Jump-to-Bottom Pill with radiant aura */}
         {(showJumpToBottom || loading) && (
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-            <button
-              type="button"
-              onClick={jumpToBottomInstant}
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-cyan-950/95 hover:bg-cyan-900 border-2 border-cyan-400/70 text-cyan-100 hover:text-white text-xs font-bold shadow-[0_10px_35px_rgba(6,182,212,0.45)] backdrop-blur-xl transition-all hover:scale-105 cursor-pointer"
-            >
-              {loading && (
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              )}
-              <span>Jump to bottom</span>
-              <ArrowDown className="w-4 h-4 text-cyan-300" />
-            </button>
+            <div className="relative group">
+              <div className="absolute -inset-1 rounded-full bg-cyan-400/40 blur-md -z-10 group-hover:opacity-100 animate-pulse" />
+              <button
+                type="button"
+                onClick={jumpToBottomInstant}
+                className="relative inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-gradient-to-b from-cyan-900/95 via-cyan-950/95 to-slate-950/95 hover:from-cyan-800 hover:to-cyan-900 border-2 border-cyan-400 text-cyan-100 hover:text-white text-xs font-bold shadow-[0_10px_35px_rgba(6,182,212,0.55),inset_0_1px_1px_rgba(255,255,255,0.35)] backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                {loading && (
+                  <span className="w-2 h-2 rounded-full bg-cyan-300 animate-ping" />
+                )}
+                <span className="tracking-wide drop-shadow">Jump to bottom</span>
+                <ArrowDown className="w-4 h-4 text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Fixed Bottom Input Bar */}
+        {/* Fixed Bottom Input Bar with pop-out shine & glowing aura */}
         <div className="sticky bottom-4 w-full z-30">
           {modelsLoading && (
-            <div className="mb-2.5 px-4 py-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 backdrop-blur-xl flex items-center justify-center space-x-2.5 text-xs text-cyan-200 shadow-lg">
-              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
-              <span>Probing and verifying available Gemini models — please wait before sending a message...</span>
+            <div className="relative mb-2.5 group">
+              <div className="absolute -inset-0.5 rounded-2xl bg-cyan-500/30 blur-sm -z-10" />
+              <div className="px-4 py-2.5 rounded-2xl bg-slate-900/95 border border-cyan-400/60 ring-1 ring-cyan-400/30 backdrop-blur-2xl flex items-center justify-center space-x-2.5 text-xs text-cyan-200 shadow-[0_6px_20px_rgba(0,0,0,0.6),0_0_15px_rgba(6,182,212,0.25),inset_0_1px_1px_rgba(255,255,255,0.2)]">
+                <RefreshCw className="w-4 h-4 animate-spin text-cyan-300 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)] shrink-0" />
+                <span className="font-medium">Probing and verifying available Gemini models — please wait before sending a message...</span>
+              </div>
             </div>
           )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend(input);
-            }}
-            className="relative flex items-center bg-slate-900/90 border border-white/15 rounded-2xl shadow-2xl shadow-black/70 backdrop-blur-2xl p-2 focus-within:border-cyan-400/70 transition-colors gap-1.5"
-          >
-            <input
-              type="text"
-              placeholder={
-                modelsLoading
-                  ? 'Waiting for Gemini models to finish loading...'
-                  : installedModels.length === 0
-                  ? 'Connect Google Gemini in the top-right to start chatting...'
-                  : "Search specific game or ask to rank games (e.g. 'Find and rank games like Hades', 'Cozy tavern sim')..."
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel}
-              className="flex-1 bg-transparent px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel || !input.trim()}
-              className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-medium shadow-md shadow-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+          <div className="relative group">
+            {/* Ambient glowing console aura */}
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-500/35 via-sky-500/25 to-indigo-500/35 blur-md -z-10 opacity-70 group-focus-within:opacity-100 group-focus-within:scale-[1.01] transition-all duration-300" />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend(input);
+              }}
+              className="relative flex items-center bg-gradient-to-b from-slate-900/90 via-slate-950/95 to-[#060913]/98 border border-cyan-500/40 focus-within:border-cyan-300 ring-1 ring-white/15 focus-within:ring-cyan-400/50 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_25px_rgba(6,182,212,0.2),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-2xl p-2 transition-all gap-1.5"
             >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 px-3 pt-2">
-            <span>
-              {userProfile?.authenticated
-                ? `Logged in as ${userProfile.personaname} • Steam Library Connected`
-                : 'Multi-Source: Steam, Reddit, HowLongToBeat & Metacritic'}
+              <input
+                type="text"
+                placeholder={
+                  modelsLoading
+                    ? 'Waiting for Gemini models to finish loading...'
+                    : installedModels.length === 0
+                    ? 'Connect Google Gemini in the top-right to start chatting...'
+                    : "Search specific game or ask to rank games (e.g. 'Find and rank games like Hades', 'Cozy tavern sim')..."
+                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel}
+                className="flex-1 bg-transparent px-4 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={loading || modelsLoading || installedModels.length === 0 || !activeModel || !input.trim()}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-600 hover:from-cyan-400 hover:via-sky-400 hover:to-indigo-500 text-white font-semibold ring-1 ring-white/25 hover:ring-cyan-300 shadow-[0_4px_14px_rgba(0,0,0,0.5),0_0_18px_rgba(6,182,212,0.4),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:shadow-[0_6px_22px_rgba(0,0,0,0.7),0_0_28px_rgba(6,182,212,0.7),inset_0_1px_1px_rgba(255,255,255,0.6)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer shrink-0 hover:scale-105 active:scale-95 hover:-translate-y-0.5 active:translate-y-0"
+              >
+                <Send className="w-4 h-4 drop-shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
+              </button>
+            </form>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 px-3 pt-2">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" />
+              <span>
+                {userProfile?.authenticated
+                  ? `Logged in as ${userProfile.personaname} • Steam Library Connected`
+                  : 'Multi-Source: Steam, Reddit, HowLongToBeat & Metacritic'}
+              </span>
             </span>
             <span>
               Active Model:{' '}
-              <span className="font-mono text-cyan-400">
+              <span className="font-mono font-bold text-cyan-300 drop-shadow-[0_0_6px_rgba(6,182,212,0.6)]">
                 {modelsLoading ? 'Loading models...' : activeModel || 'None'}
               </span>
             </span>

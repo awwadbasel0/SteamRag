@@ -95,7 +95,7 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
   };
 
   return (
-    <div className="my-5 rounded-2xl border border-slate-800/90 bg-slate-950/85 overflow-hidden shadow-2xl backdrop-blur-md transition-all">
+    <div className="my-5 rounded-2xl border border-cyan-500/35 bg-gradient-to-b from-slate-900/90 via-slate-950/95 to-[#060913]/98 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(6,182,212,0.2),inset_0_1px_1px_rgba(255,255,255,0.25)] ring-1 ring-white/10 backdrop-blur-2xl transition-all">
       {/* Obvious, Clickable Collapsible Header Banner */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -107,22 +107,22 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
             setIsExpanded(!isExpanded);
           }
         }}
-        className="w-full px-4 sm:px-5 py-3.5 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-cyan-950/30 hover:from-slate-900 hover:to-cyan-950/50 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-all group"
+        className="w-full px-4 sm:px-5 py-3.5 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-cyan-950/40 hover:from-slate-900 hover:to-cyan-950/60 border-b border-cyan-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-all group"
       >
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 group-hover:scale-105 transition-transform">
-            <Trophy className="w-5 h-5" />
+        <div className="flex items-center space-x-3.5">
+          <div className="p-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] group-hover:scale-105 group-hover:shadow-[0_0_18px_rgba(6,182,212,0.6)] transition-all">
+            <Trophy className="w-5 h-5 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-base font-bold text-white tracking-wide">
+              <h3 className="text-base font-black text-white tracking-wide drop-shadow">
                 Discovered Matches
               </h3>
-              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                 {displayedGames.length} {displayedGames.length === 1 ? 'Game' : 'Games'}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-300 mt-0.5">
               {isExpanded
                 ? 'Click header to collapse cards • Ranked with Steam, HLTB & Metacritic data'
                 : 'Cards collapsed — click to expand full interactive comparison & filters'}
@@ -140,13 +140,13 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                     key={g.appid || i}
                     src={g.header_image}
                     alt={g.name}
-                    className="w-10 h-6 rounded object-cover border border-slate-700 shadow"
+                    className="w-10 h-6 rounded object-cover ring-1 ring-cyan-500/50 shadow"
                   />
                 ) : null
               )}
             </div>
           )}
-          <span className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800/90 group-hover:bg-cyan-500/20 border border-slate-700 group-hover:border-cyan-500/40 text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-all shadow-sm">
+          <span className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900/90 group-hover:bg-cyan-950/60 border border-cyan-500/30 group-hover:border-cyan-400 text-xs font-bold text-slate-100 group-hover:text-cyan-200 shadow-[0_2px_10px_rgba(0,0,0,0.5),0_0_12px_rgba(6,182,212,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-all">
             <span>{isExpanded ? 'Collapse Matches' : `Expand ${displayedGames.length} Matches`}</span>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-cyan-400" />
@@ -159,18 +159,18 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
 
       {/* Collapsed Quick Preview Strip (so top picks remain visible when collapsed) */}
       {!isExpanded && (
-        <div className="px-4 py-2.5 bg-slate-950/90 flex flex-wrap items-center gap-2">
+        <div className="px-4 py-2.5 bg-slate-950/90 flex flex-wrap items-center gap-2 border-b border-cyan-500/20">
           {displayedGames.slice(0, 5).map((g, idx) => (
             <button
               key={g.appid || idx}
               type="button"
               onClick={() => setIsExpanded(true)}
-              className="flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-200 transition-colors cursor-pointer"
+              className="flex items-center space-x-2 px-3 py-1 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/25 hover:border-cyan-400/50 text-xs text-slate-200 shadow-[0_2px_6px_rgba(0,0,0,0.4)] transition-all cursor-pointer"
             >
               <span className="font-mono font-bold text-cyan-400">#{idx + 1}</span>
               <span className="font-medium truncate max-w-[150px]">{g.name}</span>
               {g.review_summary?.positive_percentage ? (
-                <span className="text-[11px] font-mono text-emerald-400">
+                <span className="text-[11px] font-mono text-emerald-400 font-bold">
                   {g.review_summary.positive_percentage}%
                 </span>
               ) : null}
@@ -180,7 +180,7 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
             <button
               type="button"
               onClick={() => setIsExpanded(true)}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium px-2 py-1 cursor-pointer"
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-bold px-2 py-1 cursor-pointer drop-shadow"
             >
               +{displayedGames.length - 5} more...
             </button>
@@ -192,21 +192,21 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
       {isExpanded && (
         <div className="p-4 sm:p-5">
           {/* Toolbar: Sort & View Mode + Filter Chips */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3.5 border-b border-slate-800/70">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3.5 border-b border-cyan-500/20">
             {/* Filter Chips Bar */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400 flex items-center space-x-1 mr-1 font-medium">
-                <Filter className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-xs text-slate-300 flex items-center space-x-1 mr-1 font-bold">
+                <Filter className="w-3.5 h-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
                 <span>Filter:</span>
               </span>
 
               <button
                 type="button"
                 onClick={() => setFilterOnSale(!filterOnSale)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] ${
                   filterOnSale
-                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                    : 'bg-slate-900/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-emerald-900/60 to-slate-950/90 border-emerald-400 ring-1 ring-emerald-400/50 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                    : 'bg-slate-900/80 hover:bg-slate-800/90 border-white/10 hover:border-emerald-500/40 text-slate-300 hover:text-white'
                 }`}
               >
                 🏷️ On Sale
@@ -215,10 +215,10 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
               <button
                 type="button"
                 onClick={() => setFilterActiveCCU(!filterActiveCCU)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] ${
                   filterActiveCCU
-                    ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                    : 'bg-slate-900/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-cyan-900/60 to-slate-950/90 border-cyan-400 ring-1 ring-cyan-400/50 text-cyan-200 shadow-[0_0_14px_rgba(6,182,212,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                    : 'bg-slate-900/80 hover:bg-slate-800/90 border-white/10 hover:border-cyan-500/40 text-slate-300 hover:text-white'
                 }`}
               >
                 🟢 Active ({'>'}300 CCU)
@@ -227,10 +227,10 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
               <button
                 type="button"
                 onClick={() => setFilterTopRated(!filterTopRated)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] ${
                   filterTopRated
-                    ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                    : 'bg-slate-900/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-indigo-900/60 to-slate-950/90 border-indigo-400 ring-1 ring-indigo-400/50 text-indigo-200 shadow-[0_0_14px_rgba(99,102,241,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)]'
+                    : 'bg-slate-900/80 hover:bg-slate-800/90 border-white/10 hover:border-indigo-500/40 text-slate-300 hover:text-white'
                 }`}
               >
                 ⭐ 80%+ Positive
@@ -239,13 +239,13 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
 
             {/* View Switcher & Sort Selector */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center space-x-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300">
-                <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-slate-400 text-xs">Sort:</span>
+              <div className="flex items-center space-x-1.5 bg-slate-900/90 border border-cyan-500/35 ring-1 ring-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 shadow-[0_2px_10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
+                <span className="text-slate-400 text-xs font-semibold">Sort:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="bg-transparent text-slate-100 font-medium focus:outline-none cursor-pointer"
+                  className="bg-transparent text-slate-100 font-bold focus:outline-none cursor-pointer"
                 >
                   <option value="rank" className="bg-slate-900">
                     🎯 Best Match
@@ -312,7 +312,7 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                 return (
                   <div
                     key={game.appid || idx}
-                    className="group/card relative rounded-xl border border-slate-800/90 hover:border-cyan-500/40 bg-gradient-to-br from-slate-900/95 to-slate-950 overflow-hidden shadow-lg hover:shadow-cyan-500/5 transition-all flex flex-col justify-between"
+                    className="group/card relative rounded-2xl border border-cyan-500/25 hover:border-cyan-400/60 ring-1 ring-white/10 hover:ring-cyan-400/40 bg-gradient-to-b from-slate-900/90 via-slate-950/95 to-slate-950/95 overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.6),0_0_15px_rgba(6,182,212,0.1),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.7),0_0_24px_rgba(6,182,212,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
                   >
                     {/* Crisp Cover Art Banner */}
                     <div className="relative h-32 w-full bg-slate-950 overflow-hidden flex items-end">
@@ -328,21 +328,21 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                       {/* Rank Badge & Metacritic */}
                       <div className="absolute top-2.5 left-2.5 z-10 flex items-center space-x-1.5">
                         <span
-                          className={`text-xs font-extrabold px-2.5 py-1 rounded-md shadow-md flex items-center space-x-1 ${getRankBadgeColor(
+                          className={`text-xs font-black px-2.5 py-1 rounded-xl shadow-lg flex items-center space-x-1 ring-1 ring-white/20 ${getRankBadgeColor(
                             idx
                           )}`}
                         >
                           <span>#{idx + 1}</span>
-                          {idx === 0 && <Flame className="w-3 h-3 text-red-600" />}
+                          {idx === 0 && <Flame className="w-3 h-3 text-red-600 animate-pulse" />}
                         </span>
                         {game.metacritic && (
-                          <span className="text-[11px] bg-slate-950/90 text-emerald-400 border border-slate-700 font-mono font-bold px-2 py-0.5 rounded shadow">
+                          <span className="text-[11px] bg-slate-950/95 text-emerald-300 border border-emerald-500/40 font-mono font-bold px-2 py-0.5 rounded-lg shadow-[0_0_8px_rgba(16,185,129,0.3)]">
                             Meta {game.metacritic}
                           </span>
                         )}
                         {game.reddit?.upvote_percentage && (
                           <span
-                            className="text-[11px] bg-orange-950/90 text-orange-300 border border-orange-500/40 font-mono font-bold px-2 py-0.5 rounded shadow"
+                            className="text-[11px] bg-orange-950/95 text-orange-300 border border-orange-500/40 font-mono font-bold px-2 py-0.5 rounded-lg shadow-[0_0_8px_rgba(249,115,22,0.3)]"
                             title={`Reddit: ${game.reddit.sentiment} (${game.reddit.thread_count} threads)`}
                           >
                             Reddit {game.reddit.upvote_percentage}%
@@ -356,7 +356,7 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                           href={steamStoreUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-slate-950/85 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/70 transition-colors"
+                          className="p-1.5 rounded-xl bg-slate-950/90 hover:bg-cyan-950/80 text-cyan-400 hover:text-white border border-cyan-500/40 hover:border-cyan-300 shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all cursor-pointer"
                           title="Open on Steam Store"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -365,10 +365,10 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
 
                       {/* Title Overlay */}
                       <div className="relative z-10 p-3.5 w-full">
-                        <h4 className="text-base font-bold text-white tracking-wide truncate drop-shadow">
+                        <h4 className="text-base font-black text-white tracking-wide truncate drop-shadow">
                           {game.name}
                         </h4>
-                        <p className="text-xs text-slate-300 truncate">
+                        <p className="text-xs text-slate-300 truncate drop-shadow">
                           {game.genres && game.genres.length > 0
                             ? game.genres.slice(0, 3).join(' • ')
                             : 'PC Game'}
@@ -380,9 +380,9 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                     <div className="p-3.5 space-y-3">
                       <div className="grid grid-cols-4 gap-2 text-xs">
                         {/* CCU */}
-                        <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
-                          <span className="text-[10px] text-slate-400 block">Playing Now</span>
-                          <span className="font-bold text-emerald-400 font-mono text-xs">
+                        <div className="p-2 rounded-xl bg-slate-950/85 border border-emerald-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                          <span className="text-[10px] text-slate-400 block font-medium">Playing Now</span>
+                          <span className="font-mono font-black text-emerald-300 text-xs drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]">
                             {game.current_ccu !== null && game.current_ccu !== undefined
                               ? game.current_ccu.toLocaleString()
                               : 'N/A'}
@@ -390,28 +390,28 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                         </div>
 
                         {/* Price */}
-                        <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
-                          <span className="text-[10px] text-slate-400 block">Price</span>
-                          <span className="font-bold text-white text-xs truncate block">
+                        <div className="p-2 rounded-xl bg-slate-950/85 border border-cyan-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                          <span className="text-[10px] text-slate-400 block font-medium">Price</span>
+                          <span className="font-bold text-white text-xs truncate block drop-shadow">
                             {game.price?.final_formatted || 'N/A'}
                           </span>
                         </div>
 
                         {/* Reviews */}
-                        <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
-                          <span className="text-[10px] text-slate-400 block">Positive</span>
-                          <span className="font-bold text-cyan-400 font-mono text-xs">
+                        <div className="p-2 rounded-xl bg-slate-950/85 border border-indigo-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                          <span className="text-[10px] text-slate-400 block font-medium">Positive</span>
+                          <span className="font-mono font-bold text-indigo-300 text-xs drop-shadow">
                             {posPct}%
                           </span>
                         </div>
 
                         {/* HLTB Length */}
-                        <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
-                          <span className="text-[10px] text-amber-400/90 flex items-center space-x-0.5">
+                        <div className="p-2 rounded-xl bg-slate-950/85 border border-amber-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                          <span className="text-[10px] text-amber-300/90 flex items-center space-x-0.5 font-medium">
                             <Timer className="w-2.5 h-2.5" />
                             <span>HLTB</span>
                           </span>
-                          <span className="font-bold text-amber-300 font-mono text-xs truncate block">
+                          <span className="font-mono font-bold text-amber-300 text-xs truncate block drop-shadow">
                             {game.hltb?.main_story_hours ? `~${game.hltb.main_story_hours}h` : 'N/A'}
                           </span>
                         </div>
@@ -419,10 +419,10 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
 
                       {/* Taxonomy Insights */}
                       {game.taxonomy && (
-                        <div className="p-2.5 rounded-lg bg-cyan-950/20 border border-cyan-800/30 text-xs text-cyan-100 flex items-start space-x-2">
-                          <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30 text-xs text-cyan-100 flex items-start space-x-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                          <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
                           <div className="leading-snug">
-                            <span className="font-semibold text-cyan-300">Pacing: </span>
+                            <span className="font-bold text-cyan-300">Pacing: </span>
                             <span>{game.taxonomy.pacing}</span>
                           </div>
                         </div>
@@ -434,9 +434,9 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                           href={game.reddit.top_threads[0].url || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block p-2.5 rounded-lg bg-orange-950/20 hover:bg-orange-950/35 border border-orange-500/25 text-xs transition-colors"
+                          className="block p-2.5 rounded-xl bg-orange-950/20 hover:bg-orange-950/35 border border-orange-500/30 text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
                         >
-                          <div className="flex items-center justify-between text-[10px] text-orange-300 font-mono mb-0.5">
+                          <div className="flex items-center justify-between text-[10px] text-orange-300 font-mono mb-0.5 font-semibold">
                             <span>{game.reddit.top_threads[0].subreddit} • {game.reddit.sentiment}</span>
                             <span>▲ {game.reddit.top_threads[0].score}</span>
                           </div>
@@ -458,9 +458,9 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                         <button
                           type="button"
                           onClick={() => onAskAboutGame(game.name || '')}
-                          className="w-full py-2 px-3 rounded-lg bg-slate-800/90 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500/40 text-xs font-medium text-slate-200 hover:text-cyan-200 flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
+                          className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-cyan-950/60 via-slate-900/90 to-indigo-950/60 hover:from-cyan-900/80 hover:to-indigo-900/80 border border-cyan-500/40 hover:border-cyan-300 ring-1 ring-white/10 hover:ring-cyan-400/50 text-xs font-bold text-cyan-200 hover:text-white flex items-center justify-center space-x-2 shadow-[0_4px_12px_rgba(0,0,0,0.5),0_0_14px_rgba(6,182,212,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
                         >
-                          <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+                          <MessageSquare className="w-3.5 h-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(6,182,212,0.8)]" />
                           <span>Ask AI for Deep Dive on {game.name}</span>
                         </button>
                       )}
