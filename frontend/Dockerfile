@@ -8,7 +8,7 @@ COPY . .
 RUN npm run build
 
 FROM nginx:alpine
-COPY --from=build /app/frontend/build /usr/share/nginx/html
+COPY --from=build /app/frontend/dist /usr/share/nginx/html
 
 CMD ["nginx","-g","daemon off;"]
 #ENTRYPOINT ["top", "-b"]
