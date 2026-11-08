@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import crossplane
+import os
 load_dotenv()
 
 VITE_BACKEND_URL = os.getenv("VITE_BACKEND_URL")
