@@ -8,12 +8,9 @@ COPY . .
 RUN npm run build
 
 FROM nginx:alpine
-
-RUN apk add --no-cache python3 py3-pip
-RUN pip3 install --break-system-packages python-dotenv crossplane
-
+COPY --from=build /app/frontend/nginx.conf /etc/nginx/conf.d/frontend.conf.template
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 
-COPY copy-config.py /copy-config.py
+RUN envsubst < /etc/nginx/conf.d/frontend.conf.template > /etc/nginx/conf.d/default.conf
 
-CMD python3 /copy-config.py && nginx -g "daemon off;"
+CMD  nginx -g "daemon off;"
