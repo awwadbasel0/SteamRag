@@ -14,4 +14,4 @@ COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 #COPY --from=build /app/frontend/nginx.conf /etc/nginx/conf.d/frontend.conf.template
 #RUN envsubst < /etc/nginx/conf.d/frontend.conf.template > /etc/nginx/conf.d/default.conf
 
-CMD  nginx -g "daemon off;"
+CMD ["nginx","-g","daemon off;"]
