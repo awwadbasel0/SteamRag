@@ -1,0 +1,22 @@
+location /api/ {
+    # 127.0.0.11 is Docker's built-in internal DNS resolver
+    resolver 127.0.0.11 valid=30s;
+    
+    # Storing the URL in a variable forces dynamic DNS lookup on every request
+    set $backend_endpoint "${VITE_BACKEND_URL}";
+    
+    proxy_pass $backend_endpoint;
+    
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+
+Why this fixes it:
+
+By using set $backend_endpoint ... and passing the variable to proxy_pass, Nginx will no longer crash or permanently mark the upstream as dead if the remote server fails a health check or experiences a transient network blip. It will use Docker's internal DNS resolver to fetch the remote address fresh on every incoming configuration call.
+If the dynamic resolver doesn't immediately clear it up, let me know:
+• Is the remote instance's URL a public domain (like https://example.com), a public IP, or a private cloud address?
+• Is your machine connected to a VPN to access that separate instance?
