@@ -7,7 +7,7 @@
 ## Main Features
 
 - **Deep Game Discovery & Ranking**: Finds and ranks indie, cult-classic, and niche games based on gameplay mechanics, vibe, or similarity rather than repeating mainstream titles.
-- **Multi-Source Live Data**: Aggregates real-time concurrent players (CCU), Steam pricing & discounts, Steam review ratings, Metacritic scores, HowLongToBeat completion times, and live Reddit community sentiment (`r/ShouldIbuythisgame`, `r/gamingsuggestions`, `r/patientgamers`, `r/indiegaming`).
+- **Multi-Source Live Data**: Aggregates real-time concurrent players (CCU), Steam pricing & discounts, Steam review ratings, Metacritic scores, HowLongToBeat completion times, and live Reddit community sentiment via official Reddit OAuth and consensus analysis (`r/IndieGaming`, `r/ShouldIbuythisgame`, `r/gamingsuggestions`, `r/patientgamers`).
 - **Steam Account Integration**: Sign in via Steam OpenID 2.0 to sync your library and playtime history for personalized recommendations and a dynamic game-themed background slideshow.
 - **Google Gemini Integration**: Supports signing in with a Google Account (OAuth 2.0) or connecting a Google AI Studio API key, automatically probing and selecting stable models for your tier.
 - **Multi-User Session Isolation**: Isolates each browser visitor's Steam and Google sessions via `HttpOnly` cookies.
@@ -46,6 +46,14 @@ STEAM_API_KEY=your_steam_web_api_key
 
 # Optional: SteamDB Cookie
 STEAMDB_COOKIE=
+
+# Optional: Reddit OAuth API Credentials (for live r/IndieGaming & community consensus)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+
+# Frontend Backend Target URL (for Vite / Nginx proxy)
+# Depends on deployment: e.g. http://backend:8000 on Docker network, or your custom separated backend URL
+VITE_BACKEND_URL=http://backend:8000
 ```
 
 ### Google Cloud OAuth Setup
@@ -55,6 +63,13 @@ If using **Sign in with Google Account**:
 3. Add the following to **Authorized redirect URIs**:
    - `http://localhost:5173/api/auth/google/callback`
    - `http://localhost:8000/api/auth/google/callback`
+
+### Reddit OAuth Setup
+To pull live community consensus from **r/IndieGaming**, **r/ShouldIbuythisgame**, and **r/patientgamers**:
+1. Go to [Reddit App Preferences](https://www.reddit.com/prefs/apps) and click **create app** (or **create another app...**).
+2. Select **script** or **web app**.
+3. Set the redirect URI to `http://localhost:8000` (or your domain).
+4. Copy the Client ID (under the app name) and Secret to `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET`.
 
 ---
 
@@ -70,10 +85,13 @@ This script automatically:
 1. Checks that `.env` exists (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`).
 2. Builds `steamrag-frontend:v1` (`./frontend`) and `steamrag-backend:v1` (`./backend`).
 3. Creates the `my-network` Docker bridge network.
-4. Starts the `backend` (`-p 8000:8000 --env-file .env`) and `frontend` (`-p 5173:5173`) containers on `my-network`.
+4. Starts the `backend` (`-p 8000:8000 --env-file .env`) and `frontend` (`-p 5173:80`) containers on `my-network`.
 
 - **Frontend Web App**: `http://localhost:5173`
 - **Backend API Docs**: `http://localhost:8000/docs`
+
+> **Note on `frontend/nginx.conf.template` & Custom Deployments:**
+> - **Backend Endpoint (`VITE_BACKEND_URL`)**: Defines where the frontend proxies `/api/*` requests. Set to `http://backend:8000` when both containers are on the same Docker network, or your custom URL if hosting the backend separately.
 
 ---
 
