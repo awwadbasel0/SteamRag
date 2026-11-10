@@ -13,6 +13,8 @@ class SettingsPayload(BaseModel):
     gemini_api_key: Optional[str] = None
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
+    reddit_client_id: Optional[str] = None
+    reddit_client_secret: Optional[str] = None
     default_model: Optional[str] = None
 
 @router.get("")
@@ -24,6 +26,7 @@ async def get_settings():
         "google_oauth_client_configured": bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET),
         "google_oauth_connected": False,
         "google_user": None,
+        "reddit_configured": bool(settings.REDDIT_CLIENT_ID and settings.REDDIT_CLIENT_SECRET),
         "default_model": settings.DEFAULT_MODEL
     }
     try:
@@ -36,6 +39,8 @@ async def get_settings():
             res["gemini_api_key_configured"] = True
         if kv.get("google_client_id") and kv.get("google_client_secret"):
             res["google_oauth_client_configured"] = True
+        if kv.get("reddit_client_id") and kv.get("reddit_client_secret"):
+            res["reddit_configured"] = True
         if kv.get("google_oauth_session"):
             sess = json.loads(kv["google_oauth_session"])
             if sess.get("access_token") or sess.get("refresh_token"):
@@ -63,6 +68,10 @@ async def save_settings(payload: SettingsPayload):
         await set_visitor_setting("google_client_id", payload.google_client_id.strip())
     if payload.google_client_secret is not None:
         await set_visitor_setting("google_client_secret", payload.google_client_secret.strip())
+    if payload.reddit_client_id is not None:
+        await set_visitor_setting("reddit_client_id", payload.reddit_client_id.strip())
+    if payload.reddit_client_secret is not None:
+        await set_visitor_setting("reddit_client_secret", payload.reddit_client_secret.strip())
     if payload.default_model is not None:
         await set_visitor_setting("default_model", payload.default_model)
     return {"status": "saved"}

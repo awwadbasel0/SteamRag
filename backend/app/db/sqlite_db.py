@@ -251,7 +251,15 @@ async def claim_legacy_session_if_any(visitor_id: Optional[str] = None):
                 await db.execute("UPDATE user_auth SET is_active = 0")
 
         # 2. Migrate legacy un-prefixed user_settings keys if any exist
-        legacy_keys = ("google_oauth_session", "gemini_api_key", "steam_api_key", "steamdb_cookie", "default_model")
+        legacy_keys = (
+            "google_oauth_session",
+            "gemini_api_key",
+            "steam_api_key",
+            "steamdb_cookie",
+            "default_model",
+            "reddit_client_id",
+            "reddit_client_secret",
+        )
         placeholders = ",".join("?" for _ in legacy_keys)
         cur_settings = await db.execute(
             f"SELECT key, value FROM user_settings WHERE key IN ({placeholders})",

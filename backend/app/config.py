@@ -22,6 +22,8 @@ class Settings(BaseModel):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
+    REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
     DB_PATH: str = str(SQLITE_DB_PATH)
 
 

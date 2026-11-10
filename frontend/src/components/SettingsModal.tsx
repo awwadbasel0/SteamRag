@@ -20,6 +20,8 @@ export const SettingsModal: React.FC<Props> = ({
   const [geminiKey, setGeminiKey] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [cookie, setCookie] = useState('');
+  const [redditClientId, setRedditClientId] = useState('');
+  const [redditClientSecret, setRedditClientSecret] = useState('');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +33,10 @@ export const SettingsModal: React.FC<Props> = ({
           if (data.steam_api_key_configured) setApiKey('••••••••••••••••');
           if (data.steamdb_cookie_configured) setCookie('••••••••••••••••');
           if (data.gemini_api_key_configured) setGeminiKey('••••••••••••••••');
+          if (data.reddit_configured) {
+            setRedditClientId('••••••••••••••••');
+            setRedditClientSecret('••••••••••••••••');
+          }
         })
         .catch(console.error);
     }
@@ -45,6 +51,8 @@ export const SettingsModal: React.FC<Props> = ({
       if (apiKey && !apiKey.startsWith('••••')) payload.steam_api_key = apiKey;
       if (cookie && !cookie.startsWith('••••')) payload.steamdb_cookie = cookie;
       if (geminiKey && !geminiKey.startsWith('••••')) payload.gemini_api_key = geminiKey;
+      if (redditClientId && !redditClientId.startsWith('••••')) payload.reddit_client_id = redditClientId;
+      if (redditClientSecret && !redditClientSecret.startsWith('••••')) payload.reddit_client_secret = redditClientSecret;
 
       await fetch('/api/settings', {
         method: 'POST',
@@ -219,6 +227,55 @@ export const SettingsModal: React.FC<Props> = ({
               onChange={(e) => setCookie(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
             />
+          </div>
+
+          {/* Reddit OAuth 2.0 Credentials */}
+          <div className="p-3.5 rounded-xl bg-orange-950/20 border border-orange-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-orange-300">
+                  Reddit API Integration (r/IndieGaming Consensus)
+                </span>
+              </div>
+              <a
+                href="https://www.reddit.com/prefs/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-orange-400 hover:text-orange-300 flex items-center space-x-1 font-medium"
+              >
+                <span>Create App (Script)</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Optional: Power real-time community sentiment from r/IndieGaming, r/ShouldIbuythisgame, and r/patientgamers via official Reddit OAuth.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                  Reddit Client ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 14-character ID"
+                  value={redditClientId}
+                  onChange={(e) => setRedditClientId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-orange-500 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                  Reddit Client Secret
+                </label>
+                <input
+                  type="password"
+                  placeholder="e.g. secret key"
+                  value={redditClientSecret}
+                  onChange={(e) => setRedditClientSecret(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-orange-500 font-mono"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="p-3 rounded-lg bg-indigo-950/30 border border-indigo-900/50 flex items-start space-x-2 text-xs text-indigo-300">
