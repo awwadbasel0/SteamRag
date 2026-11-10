@@ -54,6 +54,10 @@ REDDIT_CLIENT_SECRET=your_reddit_client_secret
 # Frontend Backend Target URL (for Vite / Nginx proxy)
 # Depends on deployment: e.g. http://backend:8000 on Docker network, or your custom separated backend URL
 VITE_BACKEND_URL=http://backend:8000
+
+# Nginx DNS Resolver (for frontend/nginx.conf.template)
+# Use 127.0.0.11 when running on a Docker network (Docker internal DNS), or 1.1.1.1 / 8.8.8.8 for external domains
+NGINX_RESOLVER=127.0.0.11
 ```
 
 ### Google Cloud OAuth Setup
@@ -92,6 +96,7 @@ This script automatically:
 
 > **Note on `frontend/nginx.conf.template` & Custom Deployments:**
 > - **Backend Endpoint (`VITE_BACKEND_URL`)**: Defines where the frontend proxies `/api/*` requests. Set to `http://backend:8000` when both containers are on the same Docker network, or your custom URL if hosting the backend separately.
+> - **DNS Resolver (`NGINX_RESOLVER`)**: Configures Nginx's runtime DNS resolver for proxying. When running on a Docker network with container names (like `http://backend:8000`), this must be set to Docker's internal embedded DNS at `127.0.0.11`. Use public DNS like `1.1.1.1` or `8.8.8.8` only when proxying to an external public internet domain.
 
 ---
 
