@@ -429,9 +429,12 @@ export const RankedGameDiscovery: React.FC<Props> = ({ games, onAskAboutGame }) 
                       )}
 
                       {/* Top Reddit Community Thread */}
-                      {game.reddit?.top_threads && game.reddit.top_threads.length > 0 && (
+                      {game.reddit?.top_threads &&
+                        game.reddit.top_threads.length > 0 &&
+                        game.reddit.top_threads[0].url &&
+                        game.reddit.top_threads[0].url.startsWith('http') && (
                         <a
-                          href={game.reddit.top_threads[0].url || '#'}
+                          href={game.reddit.top_threads[0].url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="block p-2.5 rounded-xl bg-orange-950/20 hover:bg-orange-950/35 border border-orange-500/30 text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
